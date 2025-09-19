@@ -4,42 +4,42 @@ import AppCard from './AppCard';
 
 const appsData = [
   {
-    title: 'MemoBee',
+    title: '메모비 AI',
     packageName: 'com.memobeeapp',
     icon: '🐝',
-    primaryColor: '#FFC107',
-    description: '간편하고 직관적인 메모 관리 앱. 일상의 모든 아이디어를 빠르게 기록하고 정리하세요.',
+    primaryColor: '#B794F6',
+    description: 'AI로 똑똑한 메모쓰기! 일상의 모든 순간을 기록하고, AI가 자동으로 정리해주는 메모 앱입니다.',
     features: [
-      '빠른 메모 작성 및 편집',
-      '카테고리별 분류 기능',
-      '검색 및 필터링',
-      '위젯 지원'
+      'AI 자동 분석 기능으로 핵심 키워드 추출',
+      '중요도와 감정 분석으로 메모의 중요성 파악',
+      '자동 제목 생성으로 메모 관리가 더욱 체계적',
+      '연관된 메모들을 자동으로 그룹화하여 정보 연결'
     ]
   },
   {
-    title: 'MemoYa',
-    packageName: 'com.memoyaapp',
-    icon: '📝',
-    primaryColor: '#4CAF50',
-    description: '스마트한 메모 작성을 위한 앱. 텍스트, 이미지, 체크리스트를 한 곳에서 관리하세요.',
-    features: [
-      '리치 텍스트 에디터',
-      '이미지 첨부 기능',
-      '체크리스트 관리',
-      '클라우드 동기화'
-    ]
-  },
-  {
-    title: 'MindM',
+    title: '마인드M',
     packageName: 'com.mindm.app',
     icon: '🧠',
-    primaryColor: '#9C27B0',
-    description: '마인드맵과 아이디어 정리를 위한 혁신적인 도구. 생각을 시각화하고 체계적으로 관리하세요.',
+    primaryColor: '#4299E1',
+    description: 'AI 기반 개인 감정 분석 앱입니다. 매일의 감정을 기록하고, 인공지능이 이를 분석하여 사용자의 감정 패턴과 변화를 깊이 있게 이해할 수 있도록 돕습니다.',
     features: [
-      '직관적인 마인드맵 생성',
-      '다양한 노드 스타일',
-      '협업 기능',
-      '내보내기 지원'
+      '감정 기록 시스템 - 다양한 입력 방식으로 텍스트, 이미지 첨부 지원',
+      'AI 기반 분석 - 고도화된 감정 분석으로 정확한 인사이트 제공',
+      '사용자 친화적 디자인 - 글래스모피즘 UI로 아름답고 직관적인 경험',
+      '지속적인 성장 - 규칙적인 기록을 통한 자기 이해와 발전'
+    ]
+  },
+  {
+    title: '메모야',
+    packageName: 'com.memoyaapp',
+    icon: '📝',
+    primaryColor: '#48BB78',
+    description: 'AI 채팅형 메모 관리 앱! Gemini AI와 자연스러운 대화로 메모 검색, 정리, 분석을 "이번 주 중요한 일정 알려줘" 등 자연어로 메모 관리가 가능합니다.',
+    features: [
+      'AI 채팅 메모 관리 - Gemini AI와 대화로 메모 검색, 정리, 분석',
+      '다중 채팅방 시스템 - 주제별로 채팅방을 만들어 메모를 체계적으로 분류',
+      '완벽한 프라이버시 - 모든 데이터는 기기에만 저장',
+      '다국어 지원 - 한국어, 영어, 일본어, 중국어, 스페인어, 독일어 지원'
     ]
   }
 ];
