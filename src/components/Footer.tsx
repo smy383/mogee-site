@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
               <Github className="w-5 h-5" />
             </a>
             <a
-              href="mailto:contact@mogee.dev"
+              href="mailto:thewinnerple@gmail.com"
               className="p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-all hover:scale-110 hover:shadow-lg hover:shadow-purple-500/20"
               aria-label="Email"
             >
