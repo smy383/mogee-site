@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/static/css/main.1ecb6f90.css",
-    "main.js": "/static/js/main.92e336f1.js",
-    "static/js/453.84264dad.chunk.js": "/static/js/453.84264dad.chunk.js",
-    "index.html": "/index.html",
-    "main.1ecb6f90.css.map": "/static/css/main.1ecb6f90.css.map",
-    "main.92e336f1.js.map": "/static/js/main.92e336f1.js.map",
-    "453.84264dad.chunk.js.map": "/static/js/453.84264dad.chunk.js.map"
+    "main.css": "/mogee-site/static/css/main.1ecb6f90.css",
+    "main.js": "/mogee-site/static/js/main.f6c11008.js",
+    "static/js/453.84264dad.chunk.js": "/mogee-site/static/js/453.84264dad.chunk.js",
+    "index.html": "/mogee-site/index.html",
+    "main.1ecb6f90.css.map": "/mogee-site/static/css/main.1ecb6f90.css.map",
+    "main.f6c11008.js.map": "/mogee-site/static/js/main.f6c11008.js.map",
+    "453.84264dad.chunk.js.map": "/mogee-site/static/js/453.84264dad.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1ecb6f90.css",
-    "static/js/main.92e336f1.js"
+    "static/js/main.f6c11008.js"
   ]
 }
