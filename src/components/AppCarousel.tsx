@@ -2,134 +2,90 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Download, ExternalLink, Briefcase } from 'lucide-react';
+import { collection, getDocsFromServer } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import { useLang, t, Lang } from '../contexts/LanguageContext';
 
-const appsData = [
-  {
-    title: 'ttapp',
-    packageName: 'com.ttapp.app',
-    icon: '📱',
-    primaryColor: '#7C6FFF',
-    bg: 'from-violet-50 to-indigo-50',
-    description: '모바일에서 Claude Code를 원격 제어하는 앱. 어디서든 AI 코딩 어시스턴트를 손안에서 사용하세요.',
-    tags: ['AI', 'Remote', 'Flutter'],
-    websiteUrl: 'https://ttapp-remote.com',
-    appStoreUrl: 'https://apps.apple.com/kr/app/ttapp/id6759002810',
-  },
-  {
-    title: '메모비 AI',
-    packageName: 'com.memobeeapp',
-    icon: '🐝',
-    primaryColor: '#9F7AEA',
-    bg: 'from-purple-50 to-pink-50',
-    description: 'AI로 똑똑한 메모쓰기! 일상의 모든 순간을 기록하고 AI가 자동으로 정리해주는 메모 앱.',
-    tags: ['AI', 'Memo', 'Flutter'],
-  },
-  {
-    title: '마인드M',
-    packageName: 'com.mindm.app',
-    icon: '🧠',
-    primaryColor: '#4299E1',
-    bg: 'from-blue-50 to-cyan-50',
-    description: 'AI 기반 개인 감정 분석 앱. 매일의 감정을 기록하고 AI가 패턴을 분석해 자기 이해를 돕습니다.',
-    tags: ['AI', '감정분석', 'Flutter'],
-  },
-  {
-    title: '메모야',
-    packageName: 'com.memoyaapp',
-    icon: '📝',
-    primaryColor: '#48BB78',
-    bg: 'from-green-50 to-emerald-50',
-    description: 'Gemini AI와 자연스러운 대화로 메모를 검색하고 정리하는 AI 채팅형 메모 앱.',
-    tags: ['Gemini', 'Memo', 'Flutter'],
-  },
-  {
-    title: 'ALL SMS',
-    packageName: 'com.smsforwarder.app',
-    icon: '💬',
-    primaryColor: '#FC8181',
-    bg: 'from-red-50 to-orange-50',
-    description: '안드로이드 SMS를 조건에 따라 자동으로 다른 번호나 이메일로 전달하는 스마트 포워딩 앱.',
-    tags: ['SMS', 'Automation', 'Android'],
-  },
-  {
-    title: '웹빵',
-    packageName: 'com.esc.app.escape_story_community',
-    icon: '🎮',
-    primaryColor: '#F6AD55',
-    bg: 'from-amber-50 to-yellow-50',
-    description: '개인 개발자가 설계부터 배포까지 완성한 96,000+ 라인 풀스택 모바일 UGC 플랫폼.',
-    tags: ['Fullstack', 'Firebase', 'Flutter'],
-    websiteUrl: 'https://webbang.co.kr',
-  },
-  {
-    title: '방탈출 다이어리',
-    packageName: 'com.mogee.escdiary',
-    icon: '🔐',
-    primaryColor: '#9F7AEA',
-    bg: 'from-violet-50 to-purple-50',
-    description: '나만의 방탈출 기록장! 6가지 항목 평점 시스템으로 플레이 기록을 체계적으로 관리하세요.',
-    tags: ['다이어리', 'SQLite', 'Flutter'],
-  },
-  {
-    title: '링크다',
-    packageName: 'linkda.kr',
-    icon: '🔗',
-    primaryColor: '#4299E1',
-    bg: 'from-sky-50 to-blue-50',
-    description: '"카테고리.키워드" 형태로 URL을 등록하고 쉽게 공유하는 키워드 기반 URL 단축 서비스.',
-    tags: ['Web', 'URL', 'React'],
-    websiteUrl: 'https://linkda.kr',
-  },
-  {
-    title: 'SpacePlus',
-    packageName: 'com.spaceplus.drawing',
-    icon: '✏️',
-    primaryColor: '#00D4FF',
-    bg: 'from-cyan-50 to-teal-50',
-    description: 'Android 태블릿용 3D 드로잉 앱. 스타일러스로 3차원 공간에서 그림을 그리고 비디오로 내보내세요.',
-    tags: ['Drawing', '3D', 'Android'],
-  },
-];
+interface AppData {
+  id: string;
+  title: string;
+  packageName: string;
+  logo?: string;
+  icon?: string;
+  primaryColor: string;
+  description: Record<Lang, string>;
+  features: Record<Lang, string[]>;
+  websiteUrl?: string;
+  appStoreUrl?: string;
+  order?: number;
+}
 
 const INTERVAL = 3500;
 
 const variants = {
-  enter: (dir: number) => ({
-    x: dir > 0 ? 60 : -60,
-    opacity: 0,
-    scale: 0.97,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-  },
-  exit: (dir: number) => ({
-    x: dir > 0 ? -60 : 60,
-    opacity: 0,
-    scale: 0.97,
-  }),
+  enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0, scale: 0.97 }),
+  center: { x: 0, opacity: 1, scale: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0, scale: 0.97 }),
 };
 
 const AppCarousel: React.FC = () => {
+  const { lang } = useLang();
+  const [apps, setApps] = useState<AppData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);
   const [paused, setPaused] = useState(false);
 
-  const go = useCallback((next: number, d: number) => {
-    setDir(d);
-    setIndex((next + appsData.length) % appsData.length);
+  useEffect(() => {
+    const fetchApps = async () => {
+      try {
+        const snap = await getDocsFromServer(collection(db, 'portfolio'));
+        const data = snap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() })) as AppData[];
+        data.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+        setApps(data);
+      } catch (e) {
+        console.error('carousel 불러오기 실패:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchApps();
   }, []);
 
+  const go = useCallback((next: number, d: number) => {
+    setDir(d);
+    setIndex((next + apps.length) % apps.length);
+  }, [apps.length]);
+
   useEffect(() => {
-    if (paused) return;
+    if (paused || apps.length === 0) return;
     const timer = setInterval(() => go(index + 1, 1), INTERVAL);
     return () => clearInterval(timer);
-  }, [index, paused, go]);
+  }, [index, paused, go, apps.length]);
 
-  const app = appsData[index];
+  if (loading) {
+    return (
+      <section className="mt-20 mb-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-indigo-500 flex items-center justify-center">
+              <Briefcase className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-sm font-semibold text-gray-700">{t(lang, 'portfolio')}</span>
+          </div>
+        </div>
+        <div className="rounded-2xl bg-gray-100 animate-pulse h-44" />
+      </section>
+    );
+  }
+
+  if (apps.length === 0) return null;
+
+  const app = apps[index];
   const isWeb = !app.packageName.startsWith('com.');
   const playStoreUrl = `https://play.google.com/store/apps/details?id=${app.packageName}`;
+  const desc = app.description?.[lang] ?? app.description?.ko ?? '';
 
   return (
     <section className="mt-20 mb-4">
@@ -139,14 +95,14 @@ const AppCarousel: React.FC = () => {
           <div className="w-7 h-7 rounded-xl bg-indigo-500 flex items-center justify-center">
             <Briefcase className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-sm font-semibold text-gray-700">포트폴리오</span>
-          <span className="text-xs text-gray-400 ml-1">{appsData.length}개 앱</span>
+          <span className="text-sm font-semibold text-gray-700">{t(lang, 'portfolio')}</span>
+          <span className="text-xs text-gray-400 ml-1">{t(lang, 'portfolioSubtitle', apps.length)}</span>
         </div>
         <Link
           to="/portfolio"
           className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
         >
-          전체 보기 →
+          {t(lang, 'viewAll')} →
         </Link>
       </div>
 
@@ -166,41 +122,34 @@ const AppCarousel: React.FC = () => {
               animate="center"
               exit="exit"
               transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className={`bg-gradient-to-br ${app.bg} border border-white/80 rounded-2xl p-6`}
+              className="border border-white/80 rounded-2xl p-6"
+              style={{
+                background: `linear-gradient(135deg, ${app.primaryColor}18, ${app.primaryColor}08)`,
+              }}
             >
               <div className="flex items-start gap-4">
                 {/* Icon */}
                 <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 shadow-sm"
-                  style={{ backgroundColor: `${app.primaryColor}18` }}
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 shadow-sm overflow-hidden"
+                  style={{ backgroundColor: app.logo ? 'transparent' : `${app.primaryColor}22` }}
                 >
-                  {app.icon}
+                  {app.logo ? (
+                    <img src={app.logo} alt={app.title} className="w-full h-full object-cover rounded-2xl" />
+                  ) : (
+                    app.icon
+                  )}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-bold text-gray-900 text-lg leading-tight">{app.title}</h3>
-                      <div className="flex flex-wrap gap-1.5 mt-1.5">
-                        {app.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-xs px-2 py-0.5 rounded-full font-medium text-white/90"
-                            style={{ backgroundColor: app.primaryColor }}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-3 leading-relaxed">{app.description}</p>
+                  <h3 className="font-bold text-gray-900 text-lg leading-tight">{app.title}</h3>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">{app.packageName}</p>
+                  <p className="text-sm text-gray-600 mt-3 leading-relaxed line-clamp-2">{desc}</p>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 mt-5">
+              <div className="flex gap-2 mt-5 flex-wrap">
                 {isWeb && app.websiteUrl ? (
                   <a
                     href={app.websiteUrl}
@@ -210,7 +159,7 @@ const AppCarousel: React.FC = () => {
                     style={{ backgroundColor: app.primaryColor }}
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    웹사이트 방문
+                    {t(lang, 'website')}
                   </a>
                 ) : (
                   <a
@@ -232,7 +181,7 @@ const AppCarousel: React.FC = () => {
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-white/80 text-gray-700 border border-gray-200 hover:bg-white transition-all"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    웹사이트
+                    {t(lang, 'website')}
                   </a>
                 )}
                 {app.appStoreUrl && (
@@ -270,7 +219,7 @@ const AppCarousel: React.FC = () => {
 
       {/* Dot indicators */}
       <div className="flex justify-center gap-1.5 mt-4">
-        {appsData.map((_, i) => (
+        {apps.map((_, i) => (
           <button
             key={i}
             onClick={() => go(i, i > index ? 1 : -1)}

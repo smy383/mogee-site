@@ -3,10 +3,18 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PenSquare, Menu, X, LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLang, t, Lang } from '../contexts/LanguageContext';
+
+const LANGS: { code: Lang; flag: string; label: string }[] = [
+  { code: 'ko', flag: '🇰🇷', label: '한' },
+  { code: 'en', flag: '🇺🇸', label: 'EN' },
+  { code: 'ja', flag: '🇯🇵', label: '日' },
+];
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { lang, setLang } = useLang();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -21,8 +29,8 @@ const Navbar: React.FC = () => {
   }, [location.pathname]);
 
   const navLinks = [
-    { href: '/', label: '블로그' },
-    { href: '/portfolio', label: '포트폴리오' },
+    { href: '/', label: t(lang, 'blog') },
+    { href: '/portfolio', label: t(lang, 'portfolio') },
   ];
 
   const isActive = (href: string) => {
@@ -60,19 +68,37 @@ const Navbar: React.FC = () => {
             </Link>
           ))}
 
+          {/* Language switcher */}
+          <div className="flex items-center gap-0.5 mx-2 bg-gray-100 rounded-xl p-1">
+            {LANGS.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => setLang(l.code)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                  lang === l.code
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span>{l.flag}</span>
+                <span>{l.label}</span>
+              </button>
+            ))}
+          </div>
+
           {user ? (
-            <div className="flex items-center gap-2 ml-2">
+            <div className="flex items-center gap-2">
               <Link
                 to="/admin"
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
               >
                 <PenSquare className="w-4 h-4" />
-                글쓰기
+                {t(lang, 'write')}
               </Link>
               <button
                 onClick={logout}
                 className="p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all"
-                title="로그아웃"
+                title={t(lang, 'logout')}
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -80,21 +106,39 @@ const Navbar: React.FC = () => {
           ) : (
             <Link
               to="/login"
-              className="ml-2 p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all"
-              title="로그인"
+              className="p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all"
+              title={t(lang, 'adminLogin')}
             >
               <LogIn className="w-4 h-4" />
             </Link>
           )}
         </nav>
 
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-all"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        {/* Mobile right side */}
+        <div className="md:hidden flex items-center gap-2">
+          {/* Language switcher (mobile) */}
+          <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-0.5">
+            {LANGS.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => setLang(l.code)}
+                className={`px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                  lang === l.code
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500'
+                }`}
+              >
+                {l.flag}
+              </button>
+            ))}
+          </div>
+          <button
+            className="p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-all"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -127,14 +171,14 @@ const Navbar: React.FC = () => {
                   className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium bg-indigo-500 text-white"
                 >
                   <PenSquare className="w-4 h-4" />
-                  글쓰기
+                  {t(lang, 'write')}
                 </Link>
                 <button
                   onClick={logout}
                   className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"
                 >
                   <LogOut className="w-4 h-4" />
-                  로그아웃
+                  {t(lang, 'logout')}
                 </button>
               </>
             ) : (
@@ -143,7 +187,7 @@ const Navbar: React.FC = () => {
                 className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"
               >
                 <LogIn className="w-4 h-4" />
-                관리자 로그인
+                {t(lang, 'adminLogin')}
               </Link>
             )}
           </motion.div>

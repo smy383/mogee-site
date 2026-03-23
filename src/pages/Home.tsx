@@ -4,9 +4,11 @@ import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import BlogCard, { Post } from '../components/BlogCard';
 import AppCarousel from '../components/AppCarousel';
+import { useLang, t } from '../contexts/LanguageContext';
 import { Rss } from 'lucide-react';
 
 const Home: React.FC = () => {
+  const { lang } = useLang();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -28,8 +30,16 @@ const Home: React.FC = () => {
     fetchPosts();
   }, []);
 
-  const allTags = Array.from(new Set(posts.flatMap((p) => p.tags || [])));
-  const filtered = selectedTag ? posts.filter((p) => p.tags?.includes(selectedTag)) : posts;
+  // 현재 언어에 맞는 태그 목록
+  const getPostTags = (p: Post) =>
+    lang === 'en' && p.tags_en?.length ? p.tags_en :
+    lang === 'ja' && p.tags_ja?.length ? p.tags_ja :
+    p.tags || [];
+
+  const allTags = Array.from(new Set(posts.flatMap(getPostTags)));
+  const filtered = selectedTag
+    ? posts.filter((p) => getPostTags(p).includes(selectedTag))
+    : posts;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
@@ -46,20 +56,35 @@ const Home: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-12"
+          className="mb-12 flex items-center justify-between gap-6"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center">
-              <Rss className="w-4 h-4 text-white" />
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center">
+                <Rss className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-medium text-indigo-500">{t(lang, 'blog')}</span>
             </div>
-            <span className="text-sm font-medium text-indigo-500">블로그</span>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              {t(lang, 'homeTitle')}
+            </h1>
+            <p className="text-gray-500">
+              {t(lang, 'homeSubtitle')}
+            </p>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            생각과 기록
-          </h1>
-          <p className="text-gray-500">
-            Flutter 개발, 앱 출시 경험, 그리고 일상의 이야기를 씁니다.
-          </p>
+
+          {/* 캐릭터 마스코트 */}
+          <motion.div
+            animate={{ y: [0, -12, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            className="flex-shrink-0 hidden sm:block"
+          >
+            <img
+              src="/character.png"
+              alt="mogee character"
+              className="w-32 md:w-40 drop-shadow-xl"
+            />
+          </motion.div>
         </motion.div>
 
         {/* Tag filter */}
@@ -78,16 +103,16 @@ const Home: React.FC = () => {
                   : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'
               }`}
             >
-              전체
+              {t(lang, 'all')}
             </button>
-            {allTags.map((tag, i) => (
+            {allTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                   selectedTag === tag
                     ? 'bg-indigo-500 text-white'
-                    : `bg-white border border-gray-200 hover:border-gray-300 text-gray-600`
+                    : 'bg-white border border-gray-200 hover:border-gray-300 text-gray-600'
                 }`}
               >
                 #{tag}
@@ -110,20 +135,16 @@ const Home: React.FC = () => {
           </div>
         ) : fetchError ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-            <p className="text-gray-400 font-medium">글을 불러오지 못했어요</p>
-            <p className="text-gray-300 text-sm mt-1">네트워크 연결을 확인하고 새로고침해주세요.</p>
+            <p className="text-gray-400 font-medium">{t(lang, 'loadError')}</p>
+            <p className="text-gray-300 text-sm mt-1">{t(lang, 'loadErrorHint')}</p>
           </motion.div>
         ) : filtered.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-20"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
             <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
               <Rss className="w-8 h-8 text-gray-300" />
             </div>
-            <p className="text-gray-400 font-medium">아직 작성된 글이 없어요</p>
-            <p className="text-gray-300 text-sm mt-1">첫 번째 글을 작성해보세요!</p>
+            <p className="text-gray-400 font-medium">{t(lang, 'noPosts')}</p>
+            <p className="text-gray-300 text-sm mt-1">{t(lang, 'noPostsHint')}</p>
           </motion.div>
         ) : (
           <div className="space-y-4">
@@ -132,6 +153,7 @@ const Home: React.FC = () => {
             ))}
           </div>
         )}
+
         {/* App Carousel */}
         <AppCarousel />
       </div>
