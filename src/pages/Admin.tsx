@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-  collection, addDoc, updateDoc, doc, getDoc, serverTimestamp
-} from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { collection, addDoc, updateDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
-import { PenSquare, Tag, Save, Eye, ArrowLeft, X } from 'lucide-react';
+import { PenSquare, Tag, Save, Eye, ArrowLeft, X, ImagePlus, Loader2, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const Admin: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
@@ -24,26 +25,34 @@ const Admin: React.FC = () => {
   const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!editId);
+  const [uploading, setUploading] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState('');
 
   useEffect(() => {
-    if (!user) navigate('/login');
-  }, [user, navigate]);
+    if (!authLoading && !user) navigate('/login');
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (!editId) return;
     const fetchPost = async () => {
-      const snap = await getDoc(doc(db, 'posts', editId));
-      if (snap.exists()) {
-        const data = snap.data();
-        setTitle(data.title || '');
-        setSummary(data.summary || '');
-        setContent(data.content || '');
-        setTags(data.tags || []);
+      try {
+        const snap = await getDoc(doc(db, 'posts', editId));
+        if (snap.exists()) {
+          const data = snap.data();
+          setTitle(data.title || '');
+          setSummary(data.summary || '');
+          setContent(data.content || '');
+          setTags(data.tags || []);
+        }
+      } catch {
+        alert('글을 불러오는 중 오류가 발생했어요.');
+        navigate('/');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchPost();
-  }, [editId]);
+  }, [editId, navigate]);
 
   const addTag = () => {
     const t = tagInput.trim().replace(/^#/, '');
@@ -60,6 +69,53 @@ const Admin: React.FC = () => {
     }
   };
 
+  // 이미지 업로드
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert('JPG, PNG, WEBP, GIF 형식만 업로드할 수 있어요.');
+      return;
+    }
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE) {
+      alert('이미지는 5MB 이하만 업로드할 수 있어요.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const fileName = `images/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const storageRef = ref(storage, fileName);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      // 커서 위치에 마크다운 이미지 삽입
+      const mdImage = `![이미지](${url})`;
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const newContent = content.slice(0, start) + mdImage + content.slice(end);
+        setContent(newContent);
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = start + mdImage.length;
+          textarea.focus();
+        }, 0);
+      } else {
+        setContent((prev) => prev + '\n' + mdImage);
+      }
+    } catch {
+      alert('이미지 업로드 중 오류가 발생했어요.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleSave = async () => {
     if (!title.trim() || !content.trim()) {
       alert('제목과 내용을 입력해주세요.');
@@ -69,7 +125,12 @@ const Admin: React.FC = () => {
     try {
       const data = {
         title: title.trim(),
-        summary: summary.trim() || content.slice(0, 120).trim(),
+        summary: summary.trim() || content
+          .replace(/!\[.*?\]\(.*?\)/g, '')
+          .replace(/#{1,6}\s/g, '')
+          .replace(/\*\*|__|\*|_|~~|`/g, '')
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+          .trim().slice(0, 120),
         content: content.trim(),
         tags,
         updatedAt: serverTimestamp(),
@@ -78,13 +139,13 @@ const Admin: React.FC = () => {
         await updateDoc(doc(db, 'posts', editId), data);
         navigate(`/post/${editId}`);
       } else {
-        const ref = await addDoc(collection(db, 'posts'), {
+        const docRef = await addDoc(collection(db, 'posts'), {
           ...data,
           createdAt: serverTimestamp(),
         });
-        navigate(`/post/${ref.id}`);
+        navigate(`/post/${docRef.id}`);
       }
-    } catch (e) {
+    } catch {
       alert('저장 중 오류가 발생했어요.');
     } finally {
       setSaving(false);
@@ -104,6 +165,15 @@ const Admin: React.FC = () => {
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30" />
       </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageUpload}
+      />
 
       <div className="max-w-4xl mx-auto px-6 pt-24 pb-20">
         {/* Header */}
@@ -130,6 +200,21 @@ const Admin: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* 이미지 업로드 버튼 */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || preview}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              title="이미지 업로드"
+            >
+              {uploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ImagePlus className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">{uploading ? '업로드 중...' : '이미지'}</span>
+            </button>
+
             <button
               onClick={() => setPreview(!preview)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -137,8 +222,9 @@ const Admin: React.FC = () => {
               }`}
             >
               <Eye className="w-4 h-4" />
-              미리보기
+              <span className="hidden sm:inline">미리보기</span>
             </button>
+
             <button
               onClick={handleSave}
               disabled={saving}
@@ -196,26 +282,56 @@ const Admin: React.FC = () => {
             </div>
           </div>
 
-          {/* Content / Preview */}
-          {preview ? (
-            <div className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 min-h-96 prose prose-gray max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-indigo-500 prose-code:text-indigo-600 prose-code:bg-indigo-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-blockquote:border-indigo-300">
-              {content ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-              ) : (
-                <p className="text-gray-300">내용을 입력하면 여기에 미리보기가 표시됩니다.</p>
-              )}
-            </div>
-          ) : (
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={`# 제목\n\n마크다운으로 글을 작성하세요.\n\n**굵게**, *기울임*, \`코드\` 등을 사용할 수 있어요.`}
-              className="w-full px-5 py-4 text-sm text-gray-700 placeholder-gray-300 bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-200 transition-all resize-none font-mono leading-relaxed"
-              style={{ minHeight: '480px' }}
-            />
-          )}
+          {/* 이미지 드래그앤드롭 안내 + 에디터 */}
+          <div
+            className="relative"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const file = e.dataTransfer.files?.[0];
+              if (file && file.type.startsWith('image/')) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                if (fileInputRef.current) {
+                  fileInputRef.current.files = dt.files;
+                  fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+            }}
+          >
+            {preview ? (
+              <div className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 min-h-96 prose prose-gray max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-indigo-500 prose-code:text-indigo-600 prose-code:bg-indigo-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-blockquote:border-indigo-300 prose-img:rounded-xl">
+                {content ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                ) : (
+                  <p className="text-gray-300">내용을 입력하면 여기에 미리보기가 표시됩니다.</p>
+                )}
+              </div>
+            ) : (
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder={`# 제목\n\n마크다운으로 글을 작성하세요.\n\n**굵게**, *기울임*, \`코드\` 등을 사용할 수 있어요.\n\n이미지는 상단 [이미지] 버튼 또는 여기에 드래그&드롭 하세요.`}
+                className="w-full px-5 py-4 text-sm text-gray-700 placeholder-gray-300 bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-200 transition-all resize-none font-mono leading-relaxed"
+                style={{ minHeight: '480px' }}
+              />
+            )}
 
-          <p className="text-xs text-gray-400 text-center">마크다운(Markdown) 문법을 지원합니다 · 미리보기로 확인하세요</p>
+            {/* 업로드 오버레이 */}
+            {uploading && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                  <p className="text-sm text-gray-600 font-medium">이미지 업로드 중...</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-400 text-center">
+            마크다운 지원 · 이미지 버튼 또는 드래그&드롭으로 업로드 (최대 5MB)
+          </p>
         </div>
       </div>
     </main>

@@ -41,8 +41,13 @@ const PostDetail: React.FC = () => {
   const handleDelete = async () => {
     if (!id || !window.confirm('이 글을 삭제할까요?')) return;
     setDeleting(true);
-    await deleteDoc(doc(db, 'posts', id));
-    navigate('/');
+    try {
+      await deleteDoc(doc(db, 'posts', id));
+      navigate('/');
+    } catch {
+      alert('삭제 중 오류가 발생했어요. 다시 시도해주세요.');
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -72,7 +77,7 @@ const PostDetail: React.FC = () => {
     );
   }
 
-  const readingTime = Math.max(1, Math.ceil(post.content.length / 500));
+  const readingTime = Math.max(1, Math.ceil(post.content.length / 700));
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">

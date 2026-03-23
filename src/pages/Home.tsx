@@ -9,6 +9,7 @@ import { Rss } from 'lucide-react';
 const Home: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,8 +19,8 @@ const Home: React.FC = () => {
         const snap = await getDocs(q);
         const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Post));
         setPosts(data);
-      } catch (e) {
-        console.error(e);
+      } catch {
+        setFetchError(true);
       } finally {
         setLoading(false);
       }
@@ -107,6 +108,11 @@ const Home: React.FC = () => {
               </div>
             ))}
           </div>
+        ) : fetchError ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
+            <p className="text-gray-400 font-medium">글을 불러오지 못했어요</p>
+            <p className="text-gray-300 text-sm mt-1">네트워크 연결을 확인하고 새로고침해주세요.</p>
+          </motion.div>
         ) : filtered.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
