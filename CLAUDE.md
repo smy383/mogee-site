@@ -4,77 +4,112 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a React 19.1.1 + TypeScript portfolio website showcasing Flutter mobile applications and web services. The site is deployed on GitHub Pages and features seven products: 메모비 AI, 마인드M, 메모야, ALL SMS, 웹빵, 방탈출 다이어리, and 링크다 (웹).
+mogee.org — 개인 블로그 + 포트폴리오 사이트. React 19 + TypeScript + Firebase 기반.
+**공식 URL**: https://mogee.org (Firebase Hosting)
+**GitHub Pages** (https://smy383.github.io/mogee-site): mogee.org로 자동 리디렉션만 담당
+
+## Deployment — IMPORTANT
+
+**메인 배포는 반드시 Firebase Hosting을 사용할 것. GitHub Pages는 사용하지 않음.**
+
+```bash
+# 빌드 + Firebase 배포 (mogee.org에 즉시 반영)
+npm run build && firebase deploy --only hosting
+
+# GitHub Pages는 절대 쓰지 않음. npm run deploy 사용 금지.
+# (gh-pages 브랜치는 mogee.org로 리디렉션만 하는 정적 페이지)
+```
+
+Firebase 프로젝트: `useai-community`
+Firebase Hosting target: mogee.org + useai-community.web.app
 
 ## Development Commands
 
-- `npm start` - Start development server on localhost:3000
-- `npm run build` - Create production build in `/build` directory
-- `npm test` - Run Jest tests with React Testing Library
-- `npm run deploy` - Deploy to GitHub Pages (runs predeploy build automatically)
+- `npm start` - 로컬 개발서버 localhost:3000
+- `npm run build` - 프로덕션 빌드 (/build)
+- `firebase deploy --only hosting` - mogee.org에 즉시 배포
+- `npm run deploy` - GitHub Pages용 (사용 안 함)
+
+## MCP Tools (blog-mcp server)
+
+mogee.org의 블로그/포트폴리오는 MCP로 관리. 다른 프로젝트에서도 사용 가능.
+
+**블로그 도구:**
+- `blog_write` - 새 블로그 포스트 작성 (ko/en/ja 3개 언어 필수)
+- `blog_edit` - 포스트 수정
+- `blog_delete` - 포스트 삭제
+- `blog_list` - 포스트 목록 조회
+- `blog_get` - 특정 포스트 조회
+
+**포트폴리오 도구:**
+- `portfolio_add` - 새 포트폴리오 항목 추가
+- `portfolio_edit` - 항목 수정
+- `portfolio_delete` - 항목 삭제
+- `portfolio_list` - 포트폴리오 목록 조회
+
+**규칙: 모든 블로그/포트폴리오 콘텐츠는 ko/en/ja 3개 언어로 작성할 것.**
+
+blog-mcp 경로: `/Users/smymac/Documents/mogee/blog-mcp`
 
 ## Architecture
 
 **Tech Stack:**
-- React 19.1.1 with TypeScript 4.9.5
-- Tailwind CSS 3.4.17 for styling
-- Framer Motion 12.23.15 for animations
-- Lucide React for icons
-- Create React App for build tooling
-- GitHub Pages deployment via gh-pages package
+- React 19.1.1 + TypeScript
+- Tailwind CSS 3.4.17
+- Framer Motion (animations)
+- Firebase: Firestore, Auth, Storage, Hosting
+- Create React App
+
+**Firestore Collections:**
+- `posts` — 블로그 포스트
+- `portfolio` — 포트폴리오 앱 목록
+
+**중요: Firestore 쿼리는 반드시 `getDocsFromServer()`를 사용할 것.**
+`getDocs()`는 IndexedDB 캐시를 반환할 수 있어서 최신 데이터가 안 나옴.
+정렬은 `orderBy` 대신 클라이언트 측 `data.sort((a,b) => (a.order??999)-(b.order??999))` 사용
+(Firestore 복합 인덱스 불필요)
+
+**Multilingual Support:**
+- `src/contexts/LanguageContext.tsx` — ko/en/ja 지원
+- 브라우저 언어 자동 감지, localStorage 저장
+- `t(lang, 'key')` 함수로 번역 텍스트 사용
+- 새 UI 텍스트 추가 시 반드시 LanguageContext에 ko/en/ja 모두 추가
 
 **Component Structure:**
-- `src/App.tsx` - Main application component with scroll-based sections
-- `src/components/Hero.tsx` - Landing hero section with animated introduction
-- `src/components/Apps.tsx` - Grid showcase with app data (appsData array containing 7 products)
-- `src/components/AppCard.tsx` - Individual app display cards with features and links
-- `src/components/Footer.tsx` - Contact information and social media links
+- `src/App.tsx` - 메인 앱 (라우팅 포함)
+- `src/pages/Home.tsx` - 홈 (Hero + AppCarousel)
+- `src/pages/Portfolio.tsx` - 포트폴리오 전체 목록 (Firestore fetch)
+- `src/components/AppCarousel.tsx` - 홈 포트폴리오 캐러셀 (Firestore fetch)
+- `src/components/Hero.tsx` - mogee 캐릭터 + 소개 섹션
+- `src/components/Footer.tsx` - 푸터
 
-**Data Management:**
-- App data is defined statically in `Apps.tsx` as the `appsData` array (lines 5-100)
-- Each app object includes: title, packageName, icon, primaryColor, description, features array, and optional privacyPolicyUrl/websiteUrl
-- No external API calls or state management libraries - all data is local and static
+**Portfolio 데이터 구조 (Firestore `portfolio` 컬렉션):**
+```
+{
+  title: string,
+  packageName: string,  // com.* = Android 앱, 그 외 = 웹서비스
+  logo?: string,        // 이미지 URL (Storage)
+  icon?: string,        // 이모지 폴백
+  primaryColor: string, // hex color
+  description: { ko: string, en: string, ja: string },
+  features: { ko: string[], en: string[], ja: string[] },
+  websiteUrl?: string,
+  appStoreUrl?: string,
+  privacyPolicyUrl?: string,
+  order: number         // 정렬 순서 (낮을수록 앞)
+}
+```
 
-**Key Patterns:**
-- Single-page application with smooth scrolling sections (no routing)
-- Functional components with TypeScript interfaces for props
-- Framer Motion animations:
-  - Staggered entrance delays (0.2s increments in Hero, index-based in Apps)
-  - `whileInView` animations trigger when sections enter viewport
-  - Consistent durations (0.5-0.8s) and hover effects (y: -10 lift on cards)
-- Responsive design using Tailwind's mobile-first approach
-- Purple/blue gradient theme with glass morphism effects (backdrop-blur-sm)
+**Firestore Security Rules:**
+- `posts`, `portfolio` 모두 read: true (공개), write: 관리자 UID만
 
 ## Styling Conventions
 
-**Tailwind Configuration (`tailwind.config.js`):**
-- Custom colors: primary (#6366f1), secondary (#8b5cf6), dark (#0f172a)
-- Custom animations: fade-up (0.5s with translateY), fade-in (0.5s opacity)
-- Grid breakpoints: md (768px for 2 columns), lg (1024px for 3 columns)
+- Tailwind CSS 인라인 유틸리티 (별도 CSS 모듈 없음)
+- 밝은 테마: white/gray 계열 배경, indigo/violet 액센트
+- 카드: `bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl`
+- 버튼: rounded-xl, primaryColor 기반 동적 색상
 
-**Common Patterns:**
-- Glass morphism: `bg-gray-900/80 backdrop-blur-sm border border-gray-800`
-- Gradient text: `bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent`
-- Hover states: `hover:scale-105 transition-all duration-300`
-- No separate CSS modules - all styling is inline Tailwind utilities
-
-## Deployment
-
-The site is configured for GitHub Pages deployment:
-- Homepage: `https://smy383.github.io/mogee-site`
-- Build output assumes `/mogee-site/` base path (subpath, not root deployment)
-- Deployment process:
-  1. `npm run deploy` triggers `predeploy` script
-  2. `predeploy` runs `npm run build` automatically
-  3. `gh-pages` package pushes `/build` directory to `gh-pages` branch
-  4. GitHub Pages serves from `gh-pages` branch
-- Google Search Console verification file included in `/public`
-
-**Important:** The base path configuration in `package.json` is critical - all asset paths are relative to `/mogee-site/`
-
-## Testing
-
-Basic Jest + React Testing Library setup is configured but minimal tests exist. When adding tests, focus on component rendering and user interactions rather than implementation details.
 ---
 
 # CLAUDE.md (ttapp rules)
