@@ -6,6 +6,7 @@ import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang, t, Lang } from '../contexts/LanguageContext';
 import { Post } from '../components/BlogCard';
+import SEOHead from '../components/SEOHead';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Calendar, Clock, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
@@ -121,8 +122,47 @@ const PostDetail: React.FC = () => {
     ? `${readingTime} min read`
     : `${readingTime}${t(lang, 'minRead')}`;
 
+  // SEO 데이터
+  const seoDescription = (() => {
+    const raw = displayContent.replace(/[#*`>\-_[\]()]/g, '').trim();
+    return raw.length > 160 ? raw.slice(0, 157) + '...' : raw;
+  })();
+
+  const publishedIso = post.createdAt?.toDate
+    ? post.createdAt.toDate().toISOString()
+    : undefined;
+
+  const postJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: displayTitle,
+    description: seoDescription,
+    url: `https://mogee.org/post/${post.id}`,
+    datePublished: publishedIso,
+    author: {
+      '@type': 'Person',
+      name: 'Mogee Development',
+      url: 'https://mogee.org',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Mogee Development',
+      url: 'https://mogee.org',
+    },
+    keywords: displayTags?.join(', '),
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+      <SEOHead
+        title={displayTitle}
+        description={seoDescription}
+        ogType="article"
+        canonicalPath={`/post/${post.id}`}
+        publishedAt={publishedIso}
+        tags={displayTags}
+        jsonLd={postJsonLd}
+      />
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30" />

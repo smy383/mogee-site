@@ -4,6 +4,7 @@ import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import BlogCard, { Post } from '../components/BlogCard';
 import AppCarousel from '../components/AppCarousel';
+import SEOHead from '../components/SEOHead';
 import { useLang, t } from '../contexts/LanguageContext';
 import { Rss } from 'lucide-react';
 
@@ -41,8 +42,25 @@ const Home: React.FC = () => {
     ? posts.filter((p) => getPostTags(p).includes(selectedTag))
     : posts;
 
+  const homeJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'Mogee Development',
+    url: 'https://mogee.org',
+    description: 'Flutter 앱 개발 블로그. AI, 앱 개발, 기술 이야기를 공유합니다.',
+    author: {
+      '@type': 'Person',
+      name: 'Mogee Development',
+      url: 'https://mogee.org',
+    },
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+      <SEOHead
+        canonicalPath="/"
+        jsonLd={homeJsonLd}
+      />
       {/* Decorative blobs */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob" />
@@ -83,6 +101,7 @@ const Home: React.FC = () => {
               src="/character.png"
               alt="mogee character"
               className="w-32 md:w-40 drop-shadow-xl"
+              loading="eager"
             />
           </motion.div>
         </motion.div>

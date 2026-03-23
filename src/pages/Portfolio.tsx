@@ -4,6 +4,7 @@ import { db } from '../firebase/config';
 import { motion } from 'framer-motion';
 import { Download, ExternalLink, Star, Shield, Briefcase } from 'lucide-react';
 import { useLang, t, Lang } from '../contexts/LanguageContext';
+import SEOHead from '../components/SEOHead';
 
 interface AppData {
   id: string;
@@ -39,7 +40,7 @@ const AppCard: React.FC<{ app: AppData; index: number; lang: Lang }> = ({ app, i
           style={{ backgroundColor: app.logo ? 'transparent' : `${app.primaryColor}18` }}
         >
           {app.logo ? (
-            <img src={app.logo} alt={app.title} className="w-full h-full object-cover rounded-2xl" />
+            <img src={app.logo} alt={app.title} className="w-full h-full object-cover rounded-2xl" loading="lazy" />
           ) : (
             app.icon
           )}
@@ -170,8 +171,27 @@ const Portfolio: React.FC = () => {
     fetchApps();
   }, []);
 
+  const portfolioJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Portfolio | Mogee Development',
+    description: 'Flutter 앱 및 웹 서비스 포트폴리오.',
+    url: 'https://mogee.org/portfolio',
+    author: {
+      '@type': 'Person',
+      name: 'Mogee Development',
+      url: 'https://mogee.org',
+    },
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+      <SEOHead
+        title="Portfolio"
+        description="Flutter 앱 및 웹 서비스 포트폴리오. Mogee Development가 만든 프로젝트들을 확인하세요."
+        canonicalPath="/portfolio"
+        jsonLd={portfolioJsonLd}
+      />
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-violet-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000" />

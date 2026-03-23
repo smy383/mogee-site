@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import Navbar from './components/Navbar';
@@ -12,6 +13,7 @@ import Admin from './pages/Admin';
 
 function App() {
   return (
+    <HelmetProvider>
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter>
@@ -31,6 +33,7 @@ function App() {
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
+    </HelmetProvider>
   );
 }
 
