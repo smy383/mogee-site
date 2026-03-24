@@ -9,7 +9,7 @@ import { Post } from '../components/BlogCard';
 import SEOHead from '../components/SEOHead';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Calendar, Clock, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, Pencil, Trash2, Link2, Share2 } from 'lucide-react';
 
 const LANG_INFO: Record<Lang, { flag: string; label: string }> = {
   ko: { flag: '🇰🇷', label: '한국어' },
@@ -26,6 +26,7 @@ const PostDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [lang, setLang] = useState<Lang>(globalLang);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -55,6 +56,32 @@ const PostDetail: React.FC = () => {
     const date = ts.toDate ? ts.toDate() : new Date(ts);
     const locale = lang === 'en' ? 'en-US' : lang === 'ja' ? 'ja-JP' : 'ko-KR';
     return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const el = document.createElement('input');
+      el.value = window.location.href;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const canNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
+
+  const handleNativeShare = async () => {
+    try {
+      await navigator.share({ title: displayTitle ?? '', url: window.location.href });
+    } catch {}
   };
 
   const handleDelete = async () => {
@@ -262,6 +289,56 @@ const PostDetail: React.FC = () => {
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {displayContent}
           </ReactMarkdown>
+        </motion.div>
+
+        {/* Share */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="mt-12 pt-8 border-t border-gray-100"
+        >
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
+            {t(lang, 'sharePost')}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Copy link */}
+            <button
+              onClick={handleCopyLink}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                copied
+                  ? 'bg-green-50 text-green-600 border border-green-200'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              {copied ? t(lang, 'copied') : t(lang, 'copyLink')}
+            </button>
+
+            {/* Native share (mobile) */}
+            {canNativeShare && (
+              <button
+                onClick={handleNativeShare}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                {t(lang, 'shareVia')}
+              </button>
+            )}
+
+            {/* Twitter / X */}
+            <a
+              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(displayTitle)}&url=${encodeURIComponent(window.location.href)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.856L1.696 2.25H8.42l4.266 5.636L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
+              </svg>
+              {t(lang, 'shareTwitter')}
+            </a>
+          </div>
         </motion.div>
       </div>
     </main>

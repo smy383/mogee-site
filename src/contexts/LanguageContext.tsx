@@ -76,6 +76,11 @@ const UI: Record<string, Record<Lang, UIValue>> = {
   deleteError:         { ko: '삭제 중 오류가 발생했어요. 다시 시도해주세요.',
                          en: 'Error while deleting. Please try again.',
                          ja: '削除中にエラーが発生しました。もう一度お試しください。' },
+  sharePost:           { ko: '이 글 공유하기',                 en: 'Share this post',                  ja: 'この記事をシェア' },
+  copyLink:            { ko: '링크 복사',                      en: 'Copy link',                        ja: 'リンクをコピー' },
+  copied:              { ko: '복사됨!',                        en: 'Copied!',                          ja: 'コピーしました！' },
+  shareVia:            { ko: '공유',                           en: 'Share',                            ja: 'シェア' },
+  shareTwitter:        { ko: 'X에 공유',                       en: 'Share on X',                       ja: 'Xでシェア' },
 };
 
 export function t(lang: Lang, key: string, arg?: number): string {
