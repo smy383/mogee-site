@@ -103,6 +103,27 @@ blog-mcp 경로: `/Users/smymac/Documents/mogee/blog-mcp`
 **Firestore Security Rules:**
 - `posts`, `portfolio` 모두 read: true (공개), write: 관리자 UID만
 
+## SEO (2026-03-24 적용 완료)
+
+**react-helmet-async** 기반 동적 SEO 적용 완료. Next.js 마이그레이션은 불필요하다고 판단.
+
+**적용 항목:**
+- `react-helmet-async` + `HelmetProvider` (App.tsx에서 래핑)
+- `src/components/SEOHead.tsx` — 재사용 가능한 SEO 컴포넌트
+  - 동적 title, description, canonical, OG 태그, Twitter Card, JSON-LD
+- `public/index.html` — 기본 OG/Twitter/robots 메타 태그
+- `public/sitemap.xml` — 정적 라우트 (/, /portfolio)
+- 이미지 `loading="lazy"` 속성 추가 (Portfolio 로고)
+
+**페이지별 SEO 설정:**
+- `Home.tsx` — Blog 스키마 JSON-LD
+- `PostDetail.tsx` — Firestore 데이터 기반 동적 title/description + BlogPosting JSON-LD
+- `Portfolio.tsx` — CollectionPage 스키마 JSON-LD
+
+**OG 이미지:** `https://mogee.org/og-image.png` (아직 실제 이미지 없음 — 추후 제작 필요)
+
+**참고:** sitemap.xml에 블로그 포스트 URL은 미포함 (Firestore 동적 데이터라 빌드 시점에 알 수 없음). 추후 Firebase Functions로 동적 sitemap 생성 고려 가능.
+
 ## Styling Conventions
 
 - Tailwind CSS 인라인 유틸리티 (별도 CSS 모듈 없음)
