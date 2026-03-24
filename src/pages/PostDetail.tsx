@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang, t, Lang } from '../contexts/LanguageContext';
 import { Post } from '../components/BlogCard';
 import SEOHead from '../components/SEOHead';
+import CommentSection from '../components/CommentSection';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Calendar, Clock, ArrowLeft, Pencil, Trash2, Link2, Share2 } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, Pencil, Trash2, Link2, Share2, Eye, Heart } from 'lucide-react';
 
 const LANG_INFO: Record<Lang, { flag: string; label: string }> = {
   ko: { flag: '🇰🇷', label: '한국어' },
@@ -27,6 +28,9 @@ const PostDetail: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
   const [lang, setLang] = useState<Lang>(globalLang);
   const [copied, setCopied] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const viewedRef = React.useRef(false);
 
   useEffect(() => {
     if (!id) return;
@@ -34,13 +38,23 @@ const PostDetail: React.FC = () => {
       try {
         const snap = await getDoc(doc(db, 'posts', id));
         if (snap.exists()) {
-          setPost({ id: snap.id, ...snap.data() } as Post);
+          const data = { id: snap.id, ...snap.data() } as Post;
+          setPost(data);
+          setLikeCount(data.likes ?? 0);
+          setLiked(!!localStorage.getItem(`liked_post_${snap.id}`));
         }
       } finally {
         setLoading(false);
       }
     };
     fetchPost();
+  }, [id]);
+
+  // 조회수 증가 (최초 1회)
+  useEffect(() => {
+    if (!id || viewedRef.current) return;
+    viewedRef.current = true;
+    updateDoc(doc(db, 'posts', id), { views: increment(1) }).catch(() => {});
   }, [id]);
 
   // 글 로드 후 전역 언어로 초기화 (해당 언어 번역이 있을 때만)
@@ -74,6 +88,14 @@ const PostDetail: React.FC = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleLike = async () => {
+    if (!id || liked) return;
+    setLiked(true);
+    setLikeCount((n) => n + 1);
+    localStorage.setItem(`liked_post_${id}`, '1');
+    updateDoc(doc(db, 'posts', id), { likes: increment(1) }).catch(() => {});
   };
 
   const canNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
@@ -234,6 +256,10 @@ const PostDetail: React.FC = () => {
                 <Clock className="w-4 h-4" />
                 {readLabel}
               </span>
+              <span className="flex items-center gap-1.5">
+                <Eye className="w-4 h-4" />
+                {(post.views ?? 0).toLocaleString()}
+              </span>
             </div>
 
             {user && (
@@ -291,6 +317,27 @@ const PostDetail: React.FC = () => {
           </ReactMarkdown>
         </motion.div>
 
+        {/* Like */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="mt-10 flex justify-center"
+        >
+          <button
+            onClick={handleLike}
+            disabled={liked}
+            className={`flex flex-col items-center gap-1.5 px-8 py-4 rounded-2xl border-2 transition-all duration-300 ${
+              liked
+                ? 'border-pink-300 bg-pink-50 text-pink-500'
+                : 'border-gray-200 bg-white text-gray-400 hover:border-pink-300 hover:text-pink-400 hover:bg-pink-50'
+            }`}
+          >
+            <Heart className={`w-6 h-6 transition-transform duration-300 ${liked ? 'fill-pink-400 scale-110' : ''}`} />
+            <span className="text-sm font-semibold">{likeCount > 0 ? likeCount.toLocaleString() : t(lang, 'likes')}</span>
+          </button>
+        </motion.div>
+
         {/* Share */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -340,6 +387,9 @@ const PostDetail: React.FC = () => {
             </a>
           </div>
         </motion.div>
+
+        {/* Comments */}
+        <CommentSection postId={post.id} />
       </div>
     </main>
   );

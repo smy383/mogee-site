@@ -12,6 +12,8 @@ export interface Post {
   tags: string[];
   createdAt: any;
   updatedAt?: any;
+  views?: number;
+  likes?: number;
   // 다국어
   title_en?: string;
   summary_en?: string;
