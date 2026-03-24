@@ -14,6 +14,8 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [showAllTags, setShowAllTags] = useState(false);
+  const TAG_LIMIT = 20;
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -38,6 +40,8 @@ const Home: React.FC = () => {
     p.tags || [];
 
   const allTags = Array.from(new Set(posts.flatMap(getPostTags)));
+  const visibleTags = showAllTags ? allTags : allTags.slice(0, TAG_LIMIT);
+  const hasMoreTags = allTags.length > TAG_LIMIT;
   const filtered = selectedTag
     ? posts.filter((p) => getPostTags(p).includes(selectedTag))
     : posts;
@@ -124,7 +128,7 @@ const Home: React.FC = () => {
             >
               {t(lang, 'all')}
             </button>
-            {allTags.map((tag) => (
+            {visibleTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
@@ -137,6 +141,14 @@ const Home: React.FC = () => {
                 #{tag}
               </button>
             ))}
+            {hasMoreTags && (
+              <button
+                onClick={() => setShowAllTags((v) => !v)}
+                className="px-3 py-1.5 rounded-full text-sm font-medium bg-white border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-all"
+              >
+                {showAllTags ? '접기 ↑' : `+${allTags.length - TAG_LIMIT}개 더보기`}
+              </button>
+            )}
           </motion.div>
         )}
 
