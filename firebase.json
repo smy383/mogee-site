@@ -5,6 +5,10 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "functions": {
+    "source": "functions",
+    "codebase": "mogee-site"
+  },
   "hosting": {
     "public": "build",
     "ignore": [
@@ -13,6 +17,10 @@
       "**/node_modules/**"
     ],
     "rewrites": [
+      {
+        "source": "/sitemap.xml",
+        "function": "sitemap"
+      },
       {
         "source": "**",
         "destination": "/index.html"
