@@ -10,7 +10,16 @@ import SEOHead from '../components/SEOHead';
 import CommentSection from '../components/CommentSection';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Calendar, Clock, ArrowLeft, Pencil, Trash2, Link2, Share2, Eye, Heart } from 'lucide-react';
+
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    code: [...(defaultSchema.attributes?.code || []), 'className'],
+  },
+};
 
 const LANG_INFO: Record<Lang, { flag: string; label: string }> = {
   ko: { flag: '🇰🇷', label: '한국어' },
@@ -72,15 +81,17 @@ const PostDetail: React.FC = () => {
     return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
+  const canonicalUrl = `https://mogee.org/post/${id}`;
+
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(canonicalUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // fallback
       const el = document.createElement('input');
-      el.value = window.location.href;
+      el.value = canonicalUrl;
       document.body.appendChild(el);
       el.select();
       document.execCommand('copy');
@@ -102,7 +113,7 @@ const PostDetail: React.FC = () => {
 
   const handleNativeShare = async () => {
     try {
-      await navigator.share({ title: displayTitle ?? '', url: window.location.href });
+      await navigator.share({ title: displayTitle ?? '', url: canonicalUrl });
     } catch {}
   };
 
@@ -312,7 +323,7 @@ const PostDetail: React.FC = () => {
           transition={{ duration: 0.3 }}
           className="prose prose-gray max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed prose-a:text-indigo-500 prose-code:text-indigo-600 prose-code:bg-indigo-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-blockquote:border-indigo-300 prose-blockquote:text-gray-500"
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}>
             {displayContent}
           </ReactMarkdown>
         </motion.div>
@@ -375,7 +386,7 @@ const PostDetail: React.FC = () => {
 
             {/* Twitter / X */}
             <a
-              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(displayTitle)}&url=${encodeURIComponent(window.location.href)}`}
+              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(displayTitle)}&url=${encodeURIComponent(canonicalUrl)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
