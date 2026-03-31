@@ -22,6 +22,10 @@
         "function": "sitemap"
       },
       {
+        "source": "/rss.xml",
+        "function": "rss"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Github, Mail } from 'lucide-react';
+import { useLang, t } from '../contexts/LanguageContext';
 
 const Footer: React.FC = () => {
+  const { lang } = useLang();
   return (
     <footer className="border-t border-gray-100 bg-white/60 backdrop-blur-sm mt-24">
       <div className="max-w-4xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -12,8 +14,9 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4 text-sm text-gray-400">
-          <Link to="/" className="hover:text-gray-700 transition-colors">블로그</Link>
-          <Link to="/portfolio" className="hover:text-gray-700 transition-colors">포트폴리오</Link>
+          <Link to="/" className="hover:text-gray-700 transition-colors">{t(lang, 'blog')}</Link>
+          <Link to="/portfolio" className="hover:text-gray-700 transition-colors">{t(lang, 'portfolio')}</Link>
+          <Link to="/privacy" className="hover:text-gray-700 transition-colors">{t(lang, 'privacyPolicy')}</Link>
         </div>
 
         <div className="flex items-center gap-3">

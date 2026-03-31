@@ -10,6 +10,7 @@ import PostDetail from './pages/PostDetail';
 import Portfolio from './pages/Portfolio';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
+import Privacy from './pages/Privacy';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
                 <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/privacy" element={<Privacy />} />
               </Routes>
             </div>
             <Footer />
