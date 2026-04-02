@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { useSearchParams } from 'react-router-dom';
 import { db } from '../firebase/config';
 import BlogCard, { Post } from '../components/BlogCard';
 import AppCarousel from '../components/AppCarousel';
 import SEOHead from '../components/SEOHead';
 import { useLang, t } from '../contexts/LanguageContext';
-import { Rss } from 'lucide-react';
+import { TBOT_GIF } from '../assets/tbot';
 
 const Home: React.FC = () => {
   const { lang } = useLang();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [showAllTags, setShowAllTags] = useState(false);
   const TAG_LIMIT = 20;
+
+  const selectedTag = searchParams.get('tag');
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -33,7 +35,6 @@ const Home: React.FC = () => {
     fetchPosts();
   }, []);
 
-  // 현재 언어에 맞는 태그 목록
   const getPostTags = (p: Post) =>
     lang === 'en' && p.tags_en?.length ? p.tags_en :
     lang === 'ja' && p.tags_ja?.length ? p.tags_ja :
@@ -59,126 +60,165 @@ const Home: React.FC = () => {
     },
   };
 
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-      <SEOHead
-        canonicalPath="/"
-        jsonLd={homeJsonLd}
-      />
-      {/* Decorative blobs */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-50 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
-      </div>
+  const tagBtnActive: React.CSSProperties = {
+    fontFamily: 'var(--fm)',
+    fontSize: '11px',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    padding: '4px 10px',
+    border: '2px solid var(--bl)',
+    background: 'var(--bm)',
+    color: 'var(--wh)',
+    cursor: 'pointer',
+    boxShadow: '2px 2px 0 var(--bl)',
+  };
 
-      <div className="max-w-4xl mx-auto px-6 pt-28 pb-20">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-12 flex items-center justify-between gap-6"
-        >
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center">
-                <Rss className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-sm font-medium text-indigo-500">{t(lang, 'blog')}</span>
+  const tagBtnInactive: React.CSSProperties = {
+    fontFamily: 'var(--fm)',
+    fontSize: '11px',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    padding: '4px 10px',
+    border: '2px solid var(--dk)',
+    background: 'var(--wh)',
+    color: 'var(--dk)',
+    cursor: 'pointer',
+  };
+
+  const tagBtnMore: React.CSSProperties = {
+    fontFamily: 'var(--fm)',
+    fontSize: '11px',
+    letterSpacing: '0.08em',
+    padding: '4px 10px',
+    border: '2px dashed var(--pn)',
+    background: 'transparent',
+    color: 'var(--dk)',
+    cursor: 'pointer',
+    opacity: 0.7,
+  };
+
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--wh)' }}>
+      <SEOHead canonicalPath="/" jsonLd={homeJsonLd} />
+
+      <div style={{ maxWidth: '896px', margin: '0 auto', padding: '88px 24px 80px' }}>
+
+        {/* App Window Header */}
+        <div style={{ border: '2px solid var(--dk)', boxShadow: '6px 6px 0 var(--dk)', marginBottom: '40px', background: 'var(--wh)' }}>
+          {/* Title bar */}
+          <div style={{ background: 'var(--bm)', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--dk)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img src={TBOT_GIF} alt="TBOT" className="tbot" style={{ width: 24, height: 32 }} />
+              <span style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--wh)', letterSpacing: '0.12em' }}>
+                MOGEE.ORG &mdash; BLOG.EXE
+              </span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              {t(lang, 'homeTitle')}
-            </h1>
-            <p className="text-gray-500">
-              {t(lang, 'homeSubtitle')}
-            </p>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {['_', '[ ]', 'X'].map((sym) => (
+                <span key={sym} style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--wh)', padding: '1px 6px', border: '1px solid rgba(255,255,255,0.4)', cursor: 'default' }}>
+                  {sym}
+                </span>
+              ))}
+            </div>
           </div>
 
-          {/* 캐릭터 마스코트 */}
-          <motion.div
-            animate={{ y: [0, -12, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className="flex-shrink-0 hidden sm:block"
-          >
-            <img
-              src="/character.png"
-              alt="mogee character"
-              className="w-32 md:w-40 drop-shadow-xl"
-              loading="eager"
-            />
-          </motion.div>
-        </motion.div>
+          {/* Window body */}
+          <div style={{ padding: '24px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--fm)', fontSize: '10px', letterSpacing: '0.18em', color: 'var(--bl)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                {'// DEVELOPER BLOG'}
+              </div>
+              <h1 style={{ fontFamily: 'var(--fh)', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 700, color: 'var(--dk)', lineHeight: 1.1, marginBottom: '8px' }}>
+                {t(lang, 'homeTitle')}
+              </h1>
+              <p style={{ fontFamily: 'var(--fb)', fontSize: '14px', color: 'var(--dk)', opacity: 0.65 }}>
+                {t(lang, 'homeSubtitle')}
+              </p>
+            </div>
+            <div className="tbot-bounce" style={{ flexShrink: 0 }}>
+              <img src={TBOT_GIF} alt="TBOT mascot" className="tbot" style={{ width: 48, height: 64 }} />
+            </div>
+          </div>
+
+          {/* Status bar */}
+          <div style={{ background: 'var(--of)', borderTop: '2px solid var(--dk)', padding: '4px 12px', display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', letterSpacing: '0.08em' }}>
+              READY
+            </span>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--dk)', letterSpacing: '0.08em', opacity: 0.6 }}>
+              {loading ? 'LOADING...' : `${posts.length} POSTS LOADED`}
+            </span>
+          </div>
+        </div>
 
         {/* Tag filter */}
         {allTags.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-wrap gap-2 mb-8"
-          >
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '28px' }}>
             <button
-              onClick={() => setSelectedTag(null)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                !selectedTag
-                  ? 'bg-indigo-500 text-white'
-                  : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'
-              }`}
+              onClick={() => setSearchParams({})}
+              style={!selectedTag ? tagBtnActive : tagBtnInactive}
             >
               {t(lang, 'all')}
             </button>
             {visibleTags.map((tag) => (
               <button
                 key={tag}
-                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  selectedTag === tag
-                    ? 'bg-indigo-500 text-white'
-                    : 'bg-white border border-gray-200 hover:border-gray-300 text-gray-600'
-                }`}
+                onClick={() => setSearchParams(selectedTag === tag ? {} : { tag })}
+                style={selectedTag === tag ? tagBtnActive : tagBtnInactive}
               >
                 #{tag}
               </button>
             ))}
             {hasMoreTags && (
-              <button
-                onClick={() => setShowAllTags((v) => !v)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium bg-white border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-all"
-              >
-                {showAllTags ? '접기 ↑' : `+${allTags.length - TAG_LIMIT}개 더보기`}
+              <button onClick={() => setShowAllTags((v) => !v)} style={tagBtnMore}>
+                {showAllTags ? '[-] COLLAPSE' : `[+] +${allTags.length - TAG_LIMIT} MORE`}
               </button>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* Posts */}
         {loading ? (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white/70 border border-gray-100 rounded-2xl p-6 animate-pulse">
-                <div className="h-4 bg-gray-100 rounded w-1/4 mb-3" />
-                <div className="h-6 bg-gray-100 rounded w-3/4 mb-2" />
-                <div className="h-4 bg-gray-100 rounded w-full mb-1" />
-                <div className="h-4 bg-gray-100 rounded w-2/3" />
+              <div key={i} style={{ background: 'var(--of)', border: '2px solid var(--pn)', padding: '20px' }}>
+                <div style={{ height: '12px', background: 'var(--pn)', width: '25%', marginBottom: '10px' }} />
+                <div style={{ height: '18px', background: 'var(--pn)', width: '70%', marginBottom: '8px' }} />
+                <div style={{ height: '12px', background: 'var(--pn)', width: '100%', marginBottom: '6px' }} />
+                <div style={{ height: '12px', background: 'var(--pn)', width: '60%' }} />
               </div>
             ))}
           </div>
         ) : fetchError ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-            <p className="text-gray-400 font-medium">{t(lang, 'loadError')}</p>
-            <p className="text-gray-300 text-sm mt-1">{t(lang, 'loadErrorHint')}</p>
-          </motion.div>
-        ) : filtered.length === 0 ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <Rss className="w-8 h-8 text-gray-300" />
+          <div style={{ border: '2px solid var(--or)', boxShadow: '4px 4px 0 var(--or)', background: 'var(--obg)' }}>
+            <div style={{ background: 'var(--or)', padding: '6px 12px', borderBottom: '2px solid var(--or)' }}>
+              <span style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--wh)', letterSpacing: '0.12em' }}>
+                ERROR.EXE
+              </span>
             </div>
-            <p className="text-gray-400 font-medium">{t(lang, 'noPosts')}</p>
-            <p className="text-gray-300 text-sm mt-1">{t(lang, 'noPostsHint')}</p>
-          </motion.div>
+            <div style={{ padding: '24px', textAlign: 'center' }}>
+              <p style={{ fontFamily: 'var(--fh)', fontSize: '18px', fontWeight: 700, color: 'var(--or)', marginBottom: '4px' }}>
+                {t(lang, 'loadError')}
+              </p>
+              <p style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--dk)', opacity: 0.6 }}>
+                {t(lang, 'loadErrorHint')}
+              </p>
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <div className="tbot-walk" style={{ display: 'inline-block', marginBottom: '16px' }}>
+              <img src={TBOT_GIF} alt="TBOT" className="tbot" style={{ width: 64, height: 85 }} />
+            </div>
+            <p style={{ fontFamily: 'var(--fh)', fontSize: '18px', fontWeight: 700, color: 'var(--dk)', marginBottom: '4px' }}>
+              {t(lang, 'noPosts')}
+            </p>
+            <p style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--dk)', opacity: 0.5 }}>
+              {t(lang, 'noPostsHint')}
+            </p>
+          </div>
         ) : (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {filtered.map((post, i) => (
               <BlogCard key={post.id} post={post} index={i} />
             ))}

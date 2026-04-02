@@ -1,7 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, ArrowRight } from 'lucide-react';
 import { useLang, t } from '../contexts/LanguageContext';
 
 export interface Post {
@@ -14,7 +12,7 @@ export interface Post {
   updatedAt?: any;
   views?: number;
   likes?: number;
-  // 다국어
+  // multilingual
   title_en?: string;
   summary_en?: string;
   content_en?: string;
@@ -67,55 +65,108 @@ const BlogCard: React.FC<BlogCardProps> = ({ post, index = 0 }) => {
     ? `${readingTime}${t(lang, 'minRead')}`
     : `${readingTime}${t(lang, 'minRead')}`;
 
+  const cardStyle: React.CSSProperties = {
+    border: '2px solid var(--dk)',
+    boxShadow: '5px 5px 0 var(--dk)',
+    background: 'var(--wh)',
+    padding: '16px',
+    transition: 'transform 0.12s, box-shadow 0.12s',
+    display: 'block',
+    textDecoration: 'none',
+  };
+
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.4 }}
-    >
-      <Link to={`/post/${post.id}`} className="group block">
-        <div className="relative bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 hover:shadow-lg hover:shadow-gray-200/60 hover:border-gray-200 transition-all duration-300 hover:-translate-y-0.5">
-          {/* Tags */}
-          {displayTags?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {displayTags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 font-medium"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Title */}
-          <h2 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
-            {displayTitle}
-          </h2>
-
-          {/* Summary */}
-          <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4">
-            {displaySummary}
-          </p>
-
-          {/* Meta */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 text-xs text-gray-400">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                {formatDate(post.createdAt)}
+    <article style={{ animationDelay: `${index * 80}ms` }}>
+      <Link
+        to={`/post/${post.id}`}
+        className="group"
+        style={cardStyle}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = 'translate(-3px, -3px)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '8px 8px 0 var(--dk)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = 'translate(0, 0)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '5px 5px 0 var(--dk)';
+        }}
+      >
+        {/* Tags */}
+        {displayTags?.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+            {displayTags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  fontFamily: 'var(--fm)',
+                  fontSize: '10px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  padding: '2px 8px',
+                  border: '2px solid var(--bl)',
+                  background: 'var(--bbg)',
+                  color: 'var(--bl)',
+                  boxShadow: '2px 2px 0 var(--bl)',
+                }}
+              >
+                #{tag}
               </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {readLabel}
-              </span>
-            </div>
-            <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+            ))}
           </div>
+        )}
+
+        {/* Title */}
+        <h2
+          className="group-hover:text-blue-600"
+          style={{
+            fontFamily: 'var(--fh)',
+            fontSize: '20px',
+            fontWeight: 700,
+            color: 'var(--dk)',
+            marginBottom: '6px',
+            lineHeight: 1.25,
+            transition: 'color 0.1s',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {displayTitle}
+        </h2>
+
+        {/* Summary */}
+        <p
+          style={{
+            fontFamily: 'var(--fb)',
+            fontSize: '13px',
+            color: 'var(--dk)',
+            opacity: 0.7,
+            lineHeight: 1.55,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {displaySummary}
+        </p>
+
+        {/* Divider */}
+        <div style={{ borderTop: '2px solid var(--pn)', marginTop: '12px', paddingTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', letterSpacing: '0.06em' }}>
+              {formatDate(post.createdAt)}
+            </span>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', letterSpacing: '0.06em' }}>
+              {readLabel}
+            </span>
+          </div>
+          <span style={{ fontFamily: 'var(--fm)', fontSize: '13px', color: 'var(--or)', letterSpacing: '0.04em' }}>
+            &gt;&gt;
+          </span>
         </div>
       </Link>
-    </motion.article>
+    </article>
   );
 };
 

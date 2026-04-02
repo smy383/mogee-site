@@ -133,6 +133,20 @@ blog-mcp 경로: `/Users/smymac/Documents/mogee/blog-mcp`
 
 ---
 
+## Memory Management
+After completing meaningful work (commit, deploy, major changes, key decisions), save a persistent record to:
+
+`~/.claude/projects/-Users-smymac-Documents-mogee-mogee-site/memory/MEMORY.md`
+
+Rules:
+- If the file doesn't exist, create it (and any missing parent directories)
+- Keep a running log: current versions, recent changes, important decisions, known issues
+- Update after every commit/push
+- Keep entries concise — one line per item where possible
+- This file is automatically loaded as context at the start of every conversation
+
+---
+
 # CLAUDE.md (ttapp rules)
 <!-- ⚠️ DO NOT REMOVE OR MODIFY this section. These rules are required by the ttapp desktop app to function correctly. If accidentally removed, the app will automatically restore them. -->
 
