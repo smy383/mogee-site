@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { doc, getDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +11,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import { Calendar, Clock, ArrowLeft, Pencil, Trash2, Link2, Share2, Eye, Heart } from 'lucide-react';
 
 const sanitizeSchema = {
   ...defaultSchema,
@@ -26,9 +24,9 @@ const sanitizeSchema = {
 };
 
 const LANG_INFO: Record<Lang, { flag: string; label: string }> = {
-  ko: { flag: '🇰🇷', label: '한국어' },
-  en: { flag: '🇺🇸', label: 'English' },
-  ja: { flag: '🇯🇵', label: '日本語' },
+  ko: { flag: 'KO', label: '한국어' },
+  en: { flag: 'EN', label: 'English' },
+  ja: { flag: 'JA', label: '日本語' },
 };
 
 const PostDetail: React.FC = () => {
@@ -63,14 +61,12 @@ const PostDetail: React.FC = () => {
     fetchPost();
   }, [id]);
 
-  // 조회수 증가 (최초 1회)
   useEffect(() => {
     if (!id || viewedRef.current) return;
     viewedRef.current = true;
     updateDoc(doc(db, 'posts', id), { views: increment(1) }).catch(() => {});
   }, [id]);
 
-  // 글 로드 후 전역 언어로 초기화 (해당 언어 번역이 있을 때만)
   useEffect(() => {
     if (!post) return;
     if (globalLang === 'en' && post.title_en && post.content_en) setLang('en');
@@ -93,7 +89,6 @@ const PostDetail: React.FC = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
       const el = document.createElement('input');
       el.value = canonicalUrl;
       document.body.appendChild(el);
@@ -133,28 +128,48 @@ const PostDetail: React.FC = () => {
     }
   };
 
+  /* --- Loading skeleton --- */
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 pt-28">
-        <div className="max-w-3xl mx-auto px-6 animate-pulse">
-          <div className="h-8 bg-gray-100 rounded w-2/3 mb-4" />
-          <div className="h-4 bg-gray-100 rounded w-1/3 mb-8" />
-          <div className="space-y-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-4 bg-gray-100 rounded w-full" />
-            ))}
-          </div>
+      <main style={{ minHeight: '100vh', background: 'var(--wh)', paddingTop: '112px' }}>
+        <div style={{ maxWidth: '768px', margin: '0 auto', padding: '0 24px' }}>
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              style={{
+                background: 'var(--of)',
+                border: '2px solid var(--pn)',
+                height: i === 0 ? '24px' : '14px',
+                width: i === 0 ? '66%' : i === 1 ? '33%' : '100%',
+                marginBottom: i === 1 ? '24px' : '10px',
+              }}
+            />
+          ))}
         </div>
       </main>
     );
   }
 
+  /* --- 404 error window --- */
   if (!post) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 pt-28 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-400 text-lg mb-4">{t(lang, 'postNotFound')}</p>
-          <Link to="/" className="text-indigo-500 hover:underline text-sm">{t(lang, 'goHome')}</Link>
+      <main style={{ minHeight: '100vh', background: 'var(--wh)', paddingTop: '112px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ border: '2px solid var(--or)', boxShadow: '6px 6px 0 var(--or)', width: '360px', maxWidth: '90vw' }}>
+          <div style={{ background: 'var(--or)', padding: '6px 12px', borderBottom: '2px solid var(--or)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--wh)', letterSpacing: '0.12em' }}>ERROR 404</span>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--wh)' }}>[X]</span>
+          </div>
+          <div style={{ padding: '32px 24px', textAlign: 'center', background: 'var(--obg)' }}>
+            <p style={{ fontFamily: 'var(--fh)', fontSize: '20px', fontWeight: 700, color: 'var(--or)', marginBottom: '12px' }}>
+              {t(lang, 'postNotFound')}
+            </p>
+            <Link
+              to="/"
+              style={{ fontFamily: 'var(--fm)', fontSize: '12px', color: 'var(--bl)', textDecoration: 'underline' }}
+            >
+              {'<< '}{t(lang, 'goHome')}
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -186,7 +201,6 @@ const PostDetail: React.FC = () => {
     ? `${readingTime} min read`
     : `${readingTime}${t(lang, 'minRead')}`;
 
-  // SEO 데이터
   const seoDescription = (() => {
     const raw = displayContent.replace(/[#*`>\-_[\]()]/g, '').trim();
     return raw.length > 160 ? raw.slice(0, 157) + '...' : raw;
@@ -203,21 +217,29 @@ const PostDetail: React.FC = () => {
     description: seoDescription,
     url: `https://mogee.org/post/${post.id}`,
     datePublished: publishedIso,
-    author: {
-      '@type': 'Person',
-      name: 'Mogee Development',
-      url: 'https://mogee.org',
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Mogee Development',
-      url: 'https://mogee.org',
-    },
+    author: { '@type': 'Person', name: 'Mogee Development', url: 'https://mogee.org' },
+    publisher: { '@type': 'Organization', name: 'Mogee Development', url: 'https://mogee.org' },
     keywords: displayTags?.join(', '),
   };
 
+  const btnBase: React.CSSProperties = {
+    fontFamily: 'var(--fm)',
+    fontSize: '11px',
+    letterSpacing: '0.06em',
+    padding: '6px 14px',
+    border: '2px solid var(--dk)',
+    background: 'var(--wh)',
+    color: 'var(--dk)',
+    cursor: 'pointer',
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    transition: 'transform 0.1s, box-shadow 0.1s',
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+    <main style={{ minHeight: '100vh', background: 'var(--wh)' }}>
       <SEOHead
         title={displayTitle}
         description={seoDescription}
@@ -227,181 +249,187 @@ const PostDetail: React.FC = () => {
         tags={displayTags}
         jsonLd={postJsonLd}
       />
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30" />
-      </div>
 
-      <div className="max-w-3xl mx-auto px-6 pt-28 pb-20">
+      <div style={{ maxWidth: '768px', margin: '0 auto', padding: '112px 24px 80px' }}>
         {/* Back */}
-        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-8"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t(lang, 'backToBlog')}
-          </Link>
-        </motion.div>
+        <Link
+          to="/"
+          style={{
+            fontFamily: 'var(--fm)',
+            fontSize: '12px',
+            color: 'var(--bl)',
+            textDecoration: 'none',
+            display: 'inline-block',
+            marginBottom: '24px',
+            letterSpacing: '0.06em',
+          }}
+        >
+          {'<< BACK'}
+        </Link>
 
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          {/* Tags */}
-          {displayTags?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {displayTags.map((tag) => (
-                <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 font-medium">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-            {displayTitle}
-          </h1>
-
-          <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-100">
-            <div className="flex items-center gap-4 text-sm text-gray-400">
-              <span className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4" />
-                {formatDate(post.createdAt)}
+        {/* Tags */}
+        {displayTags?.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+            {displayTags.map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  fontFamily: 'var(--fm)',
+                  fontSize: '10px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  padding: '2px 8px',
+                  border: '2px solid var(--bl)',
+                  background: 'var(--bbg)',
+                  color: 'var(--bl)',
+                  boxShadow: '2px 2px 0 var(--bl)',
+                }}
+              >
+                #{tag}
               </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" />
-                {readLabel}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Eye className="w-4 h-4" />
-                {(post.views ?? 0).toLocaleString()}
-              </span>
-            </div>
+            ))}
+          </div>
+        )}
 
-            {user && (
-              <div className="flex items-center gap-2">
-                <Link
-                  to={`/admin?edit=${post.id}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  {t(lang, 'edit')}
-                </Link>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  {t(lang, 'delete')}
-                </button>
-              </div>
-            )}
+        {/* Title */}
+        <h1 style={{ fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 'clamp(24px, 4vw, 32px)', color: 'var(--dk)', lineHeight: 1.2, marginBottom: '12px' }}>
+          {displayTitle}
+        </h1>
+
+        {/* Meta + Admin */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '16px', marginBottom: '16px', borderBottom: '2px solid var(--dk)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--bl)', letterSpacing: '0.06em' }}>
+            <span>DATE: {formatDate(post.createdAt)}</span>
+            <span>TIME: {readLabel}</span>
+            <span>VIEWS: {(post.views ?? 0).toLocaleString()}</span>
           </div>
 
-          {/* 언어 전환 탭 (다국어 글에만 표시) */}
-          {availableLangs.length > 1 && (
-            <div className="flex items-center gap-1.5 mb-8">
-              {availableLangs.map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    lang === l
-                      ? 'bg-indigo-500 text-white shadow-sm'
-                      : 'bg-white/70 text-gray-500 hover:bg-gray-100 border border-gray-100'
-                  }`}
-                >
-                  <span>{LANG_INFO[l].flag}</span>
-                  <span>{LANG_INFO[l].label}</span>
-                </button>
-              ))}
+          {user && (
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <Link to={`/admin?edit=${post.id}`} style={{ ...btnBase, fontSize: '10px', padding: '4px 10px' }}>
+                [E] {t(lang, 'edit')}
+              </Link>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ ...btnBase, fontSize: '10px', padding: '4px 10px', borderColor: 'var(--or)', color: 'var(--or)' }}
+              >
+                [X] {t(lang, 'delete')}
+              </button>
             </div>
           )}
-        </motion.div>
+        </div>
+
+        {/* Language tabs */}
+        {availableLangs.length > 1 && (
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '24px' }}>
+            {availableLangs.map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                style={{
+                  fontFamily: 'var(--fm)',
+                  fontSize: '11px',
+                  letterSpacing: '0.08em',
+                  padding: '5px 14px',
+                  border: '2px solid var(--dk)',
+                  background: lang === l ? 'var(--bm)' : 'var(--wh)',
+                  color: lang === l ? 'var(--wh)' : 'var(--dk)',
+                  cursor: 'pointer',
+                  boxShadow: lang === l ? '2px 2px 0 var(--bl)' : 'none',
+                }}
+              >
+                {LANG_INFO[l].flag} {LANG_INFO[l].label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Content */}
-        <motion.div
+        <div
           key={lang}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="prose prose-gray max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed prose-a:text-indigo-500 prose-code:text-indigo-600 prose-code:bg-indigo-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-blockquote:border-indigo-300 prose-blockquote:text-gray-500"
+          className="prose prose-gray max-w-none prose-headings:font-bold"
+          style={{
+            fontFamily: 'var(--fb)',
+            color: 'var(--dk)',
+          }}
         >
+          <style>{`
+            .prose h1,.prose h2,.prose h3,.prose h4{font-family:var(--fh);color:var(--dk)}
+            .prose p{color:var(--dk);opacity:0.85;line-height:1.75}
+            .prose a{color:var(--bm);text-decoration:underline}
+            .prose code{font-family:var(--fm);color:var(--bl);background:var(--bbg);padding:2px 6px}
+            .prose pre{background:var(--dk);color:var(--wh);border:2px solid var(--dk);box-shadow:4px 4px 0 var(--bl)}
+            .prose blockquote{border-left:4px solid var(--bm);color:var(--dk);opacity:0.7;background:var(--of);padding:8px 16px;margin-left:0}
+            .prose img{border:2px solid var(--dk);box-shadow:4px 4px 0 var(--dk)}
+          `}</style>
           <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}>
             {displayContent}
           </ReactMarkdown>
-        </motion.div>
+        </div>
 
         {/* Like */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.15 }}
-          className="mt-10 flex justify-center"
-        >
+        <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
           <button
             onClick={handleLike}
             disabled={liked}
-            className={`flex flex-col items-center gap-1.5 px-8 py-4 rounded-2xl border-2 transition-all duration-300 ${
-              liked
-                ? 'border-pink-300 bg-pink-50 text-pink-500'
-                : 'border-gray-200 bg-white text-gray-400 hover:border-pink-300 hover:text-pink-400 hover:bg-pink-50'
-            }`}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '16px 32px',
+              border: `2px solid ${liked ? 'var(--or)' : 'var(--dk)'}`,
+              background: liked ? 'var(--obg)' : 'var(--wh)',
+              color: liked ? 'var(--or)' : 'var(--dk)',
+              boxShadow: `4px 4px 0 ${liked ? 'var(--or)' : 'var(--dk)'}`,
+              cursor: liked ? 'default' : 'pointer',
+              fontFamily: 'var(--fm)',
+              fontSize: '14px',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+            }}
           >
-            <Heart className={`w-6 h-6 transition-transform duration-300 ${liked ? 'fill-pink-400 scale-110' : ''}`} />
-            <span className="text-sm font-semibold">{likeCount > 0 ? likeCount.toLocaleString() : t(lang, 'likes')}</span>
+            <span style={{ fontSize: '20px' }}>{liked ? '[*]' : '[ ]'}</span>
+            <span style={{ fontSize: '12px' }}>{likeCount > 0 ? likeCount.toLocaleString() : t(lang, 'likes')}</span>
           </button>
-        </motion.div>
+        </div>
 
         {/* Share */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="mt-12 pt-8 border-t border-gray-100"
-        >
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
+        <div style={{ marginTop: '40px', paddingTop: '24px', borderTop: '2px solid var(--dk)' }}>
+          <p style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
             {t(lang, 'sharePost')}
           </p>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Copy link */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             <button
               onClick={handleCopyLink}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                copied
-                  ? 'bg-green-50 text-green-600 border border-green-200'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50'
-              }`}
+              style={{
+                ...btnBase,
+                borderColor: copied ? 'var(--bm)' : 'var(--dk)',
+                background: copied ? 'var(--bbg)' : 'var(--wh)',
+                color: copied ? 'var(--bl)' : 'var(--dk)',
+                boxShadow: '3px 3px 0 var(--dk)',
+              }}
             >
-              <Link2 className="w-3.5 h-3.5" />
-              {copied ? t(lang, 'copied') : t(lang, 'copyLink')}
+              [#] {copied ? t(lang, 'copied') : t(lang, 'copyLink')}
             </button>
 
-            {/* Native share (mobile) */}
             {canNativeShare && (
-              <button
-                onClick={handleNativeShare}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                {t(lang, 'shareVia')}
+              <button onClick={handleNativeShare} style={{ ...btnBase, boxShadow: '3px 3px 0 var(--dk)' }}>
+                [&gt;] {t(lang, 'shareVia')}
               </button>
             )}
 
-            {/* Twitter / X */}
             <a
               href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(displayTitle)}&url=${encodeURIComponent(canonicalUrl)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
+              style={{ ...btnBase, boxShadow: '3px 3px 0 var(--dk)' }}
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.856L1.696 2.25H8.42l4.266 5.636L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
-              </svg>
-              {t(lang, 'shareTwitter')}
+              [X] {t(lang, 'shareTwitter')}
             </a>
           </div>
-        </motion.div>
+        </div>
 
         {/* Comments */}
         <CommentSection postId={post.id} />

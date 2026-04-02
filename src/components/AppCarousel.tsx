@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Download, ExternalLink, Briefcase } from 'lucide-react';
 import { collection, getDocsFromServer } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useLang, t, Lang } from '../contexts/LanguageContext';
@@ -22,26 +20,19 @@ interface AppData {
 
 const INTERVAL = 3500;
 
-const variants = {
-  enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0, scale: 0.97 }),
-  center: { x: 0, opacity: 1, scale: 1 },
-  exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0, scale: 0.97 }),
-};
-
 const AppCarousel: React.FC = () => {
   const { lang } = useLang();
   const [apps, setApps] = useState<AppData[]>([]);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
-  const [dir, setDir] = useState(1);
   const [paused, setPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const fetchApps = async () => {
       try {
         const snap = await getDocsFromServer(collection(db, 'portfolio'));
-        const data = snap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() })) as AppData[];
+        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AppData[];
         data.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
         setApps(data);
       } catch (e) {
@@ -53,29 +44,52 @@ const AppCarousel: React.FC = () => {
     fetchApps();
   }, []);
 
-  const go = useCallback((next: number, d: number) => {
-    setDir(d);
+  const go = useCallback((next: number) => {
     setIndex((next + apps.length) % apps.length);
+    setProgress(0);
   }, [apps.length]);
 
+  /* Auto-advance + progress */
   useEffect(() => {
     if (paused || apps.length === 0) return;
-    const timer = setInterval(() => go(index + 1, 1), INTERVAL);
+    const step = 50;
+    const timer = setInterval(() => {
+      setProgress((p) => {
+        const next = p + (step / INTERVAL) * 100;
+        if (next >= 100) {
+          go(index + 1);
+          return 0;
+        }
+        return next;
+      });
+    }, step);
     return () => clearInterval(timer);
   }, [index, paused, go, apps.length]);
 
+  const btnBase: React.CSSProperties = {
+    fontFamily: 'var(--fm)',
+    fontSize: '11px',
+    letterSpacing: '0.06em',
+    padding: '6px 14px',
+    border: '2px solid var(--dk)',
+    background: 'var(--wh)',
+    color: 'var(--dk)',
+    cursor: 'pointer',
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+  };
+
   if (loading) {
     return (
-      <section className="mt-20 mb-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-indigo-500 flex items-center justify-center">
-              <Briefcase className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="text-sm font-semibold text-gray-700">{t(lang, 'portfolio')}</span>
-          </div>
+      <section style={{ marginTop: '60px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--bl)', textTransform: 'uppercase' }}>
+            [#] {t(lang, 'portfolio')}
+          </span>
         </div>
-        <div className="rounded-2xl bg-gray-100 animate-pulse h-44" />
+        <div style={{ border: '2px solid var(--pn)', background: 'var(--of)', height: '176px' }} />
       </section>
     );
   }
@@ -88,161 +102,188 @@ const AppCarousel: React.FC = () => {
   const desc = app.description?.[lang] ?? app.description?.ko ?? '';
 
   return (
-    <section className="mt-20 mb-4">
+    <section style={{ marginTop: '60px', marginBottom: '16px' }}>
       {/* Section header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-indigo-500 flex items-center justify-center">
-            <Briefcase className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-sm font-semibold text-gray-700">{t(lang, 'portfolio')}</span>
-          <span className="text-xs text-gray-400 ml-1">{t(lang, 'portfolioSubtitle', apps.length)}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--bl)', textTransform: 'uppercase' }}>
+            [#] {t(lang, 'portfolio')}
+          </span>
+          <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--dk)', opacity: 0.5 }}>
+            {t(lang, 'portfolioSubtitle', apps.length)}
+          </span>
         </div>
         <Link
           to="/portfolio"
-          className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
+          style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--or)', textDecoration: 'none', letterSpacing: '0.06em' }}
         >
-          {t(lang, 'viewAll')} →
+          {t(lang, 'viewAll')} {'>>'}
         </Link>
       </div>
 
-      {/* Carousel */}
+      {/* Carousel card */}
       <div
-        className="relative"
+        style={{ position: 'relative' }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        <div className="overflow-hidden rounded-2xl">
-          <AnimatePresence mode="wait" custom={dir}>
-            <motion.div
-              key={index}
-              custom={dir}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="border border-white/80 rounded-2xl p-6"
+        <div
+          style={{
+            border: '2px solid var(--dk)',
+            boxShadow: '5px 5px 0 var(--dk)',
+            background: 'var(--wh)',
+            padding: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'start', gap: '14px' }}>
+            {/* Icon */}
+            <div
               style={{
-                background: `linear-gradient(135deg, ${app.primaryColor}18, ${app.primaryColor}08)`,
+                width: '64px',
+                height: '64px',
+                border: '2px solid var(--dk)',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '28px',
+                overflow: 'hidden',
+                backgroundColor: app.logo ? 'transparent' : `${app.primaryColor}22`,
               }}
             >
-              <div className="flex items-start gap-4">
-                {/* Icon */}
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 shadow-sm overflow-hidden"
-                  style={{ backgroundColor: app.logo ? 'transparent' : `${app.primaryColor}22` }}
-                >
-                  {app.logo ? (
-                    <img src={app.logo} alt={app.title} className="w-full h-full object-cover rounded-2xl" />
-                  ) : (
-                    app.icon
-                  )}
-                </div>
+              {app.logo ? (
+                <img src={app.logo} alt={app.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                app.icon
+              )}
+            </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-900 text-lg leading-tight">{app.title}</h3>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">{app.packageName}</p>
-                  <p className="text-sm text-gray-600 mt-3 leading-relaxed line-clamp-2">{desc}</p>
-                </div>
-              </div>
+            {/* Info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ fontFamily: 'var(--fh)', fontWeight: 700, fontSize: '18px', color: 'var(--dk)', lineHeight: 1.2 }}>
+                {app.title}
+              </h3>
+              <p style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', marginTop: '2px', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {app.packageName}
+              </p>
+              <p style={{ fontFamily: 'var(--fb)', fontSize: '13px', color: 'var(--dk)', opacity: 0.7, marginTop: '10px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {desc}
+              </p>
+            </div>
+          </div>
 
-              {/* Actions */}
-              <div className="flex gap-2 mt-5 flex-wrap">
-                {isWeb && app.websiteUrl ? (
-                  <a
-                    href={app.websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 shadow-sm"
-                    style={{ backgroundColor: app.primaryColor }}
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    {t(lang, 'website')}
-                  </a>
-                ) : (
-                  <a
-                    href={playStoreUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 shadow-sm"
-                    style={{ backgroundColor: app.primaryColor }}
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Google Play
-                  </a>
-                )}
-                {app.websiteUrl && !isWeb && (
-                  <a
-                    href={app.websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-white/80 text-gray-700 border border-gray-200 hover:bg-white transition-all"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    {t(lang, 'website')}
-                  </a>
-                )}
-                {app.appStoreUrl && (
-                  <a
-                    href={app.appStoreUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 transition-all shadow-sm"
-                  >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                    </svg>
-                    App Store
-                  </a>
-                )}
-              </div>
-            </motion.div>
-          </AnimatePresence>
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: '6px', marginTop: '16px', flexWrap: 'wrap' }}>
+            {isWeb && app.websiteUrl ? (
+              <a href={app.websiteUrl} target="_blank" rel="noopener noreferrer"
+                style={{ ...btnBase, background: app.primaryColor, color: 'var(--wh)', borderColor: 'var(--dk)', boxShadow: '3px 3px 0 var(--dk)' }}>
+                [&gt;] {t(lang, 'website')}
+              </a>
+            ) : (
+              <a href={playStoreUrl} target="_blank" rel="noopener noreferrer"
+                style={{ ...btnBase, background: app.primaryColor, color: 'var(--wh)', borderColor: 'var(--dk)', boxShadow: '3px 3px 0 var(--dk)' }}>
+                [v] Google Play
+              </a>
+            )}
+            {app.websiteUrl && !isWeb && (
+              <a href={app.websiteUrl} target="_blank" rel="noopener noreferrer"
+                style={{ ...btnBase, boxShadow: '3px 3px 0 var(--dk)' }}>
+                [&gt;] {t(lang, 'website')}
+              </a>
+            )}
+            {app.appStoreUrl && (
+              <a href={app.appStoreUrl} target="_blank" rel="noopener noreferrer"
+                style={{ ...btnBase, background: 'var(--dk)', color: 'var(--wh)', boxShadow: '3px 3px 0 var(--bl)' }}>
+                App Store
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Prev / Next buttons */}
         <button
-          onClick={() => go(index - 1, -1)}
-          className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-4 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-100 shadow-md flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-white transition-all"
+          onClick={() => go(index - 1)}
+          style={{
+            position: 'absolute',
+            left: '-12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '32px',
+            height: '32px',
+            border: '2px solid var(--dk)',
+            background: 'var(--wh)',
+            fontFamily: 'var(--fm)',
+            fontSize: '12px',
+            color: 'var(--dk)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '2px 2px 0 var(--dk)',
+          }}
         >
-          <ChevronLeft className="w-4 h-4" />
+          {'<<'}
         </button>
         <button
-          onClick={() => go(index + 1, 1)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 translate-x-4 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-100 shadow-md flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-white transition-all"
+          onClick={() => go(index + 1)}
+          style={{
+            position: 'absolute',
+            right: '-12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '32px',
+            height: '32px',
+            border: '2px solid var(--dk)',
+            background: 'var(--wh)',
+            fontFamily: 'var(--fm)',
+            fontSize: '12px',
+            color: 'var(--dk)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '2px 2px 0 var(--dk)',
+          }}
         >
-          <ChevronRight className="w-4 h-4" />
+          {'>>'}
         </button>
       </div>
 
-      {/* Dot indicators */}
-      <div className="flex justify-center gap-1.5 mt-4">
+      {/* Square indicators */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '12px' }}>
         {apps.map((_, i) => (
           <button
             key={i}
-            onClick={() => go(i, i > index ? 1 : -1)}
-            className="transition-all duration-300 rounded-full"
+            onClick={() => go(i)}
             style={{
-              width: i === index ? '20px' : '6px',
-              height: '6px',
-              backgroundColor: i === index ? app.primaryColor : '#d1d5db',
+              width: i === index ? '20px' : '8px',
+              height: '8px',
+              border: '2px solid var(--dk)',
+              background: i === index ? 'var(--bm)' : 'var(--of)',
+              cursor: 'pointer',
+              padding: 0,
+              transition: 'width 0.2s',
             }}
           />
         ))}
       </div>
 
-      {/* Progress bar */}
+      {/* RETRO progress bar */}
       {!paused && (
-        <div className="mt-3 h-0.5 bg-gray-100 rounded-full overflow-hidden mx-1">
-          <motion.div
-            key={index}
-            className="h-full rounded-full"
-            style={{ backgroundColor: app.primaryColor }}
-            initial={{ width: '0%' }}
-            animate={{ width: '100%' }}
-            transition={{ duration: INTERVAL / 1000, ease: 'linear' }}
+        <div style={{ marginTop: '8px', height: '6px', border: '2px solid var(--dk)', background: 'var(--of)', marginLeft: '4px', marginRight: '4px', overflow: 'hidden' }}>
+          <div
+            style={{
+              height: '100%',
+              width: `${progress}%`,
+              background: `repeating-linear-gradient(
+                -45deg,
+                var(--bm),
+                var(--bm) 3px,
+                var(--bl3) 3px,
+                var(--bl3) 6px
+              )`,
+              transition: 'width 0.05s linear',
+            }}
           />
         </div>
       )}

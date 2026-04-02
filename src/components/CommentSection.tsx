@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, orderBy, serverTimestamp } from 'firebase/firestore';
-import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase/config';
 import { useLang, t } from '../contexts/LanguageContext';
-import { MessageCircle, Send } from 'lucide-react';
 
 interface Comment {
   id: string;
@@ -68,72 +66,148 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    fontFamily: 'var(--fb)',
+    fontSize: '13px',
+    padding: '10px 14px',
+    border: '2px solid var(--dk)',
+    background: 'var(--wh)',
+    color: 'var(--dk)',
+    boxShadow: 'inset 2px 2px 0 var(--pn)',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+  };
+
   return (
-    <div className="mt-12 pt-8 border-t border-gray-100">
+    <div style={{ marginTop: '40px', paddingTop: '24px', borderTop: '2px solid var(--dk)' }}>
       {/* Header */}
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-6">
-        <MessageCircle className="w-4 h-4 text-indigo-400" />
+      <h3 style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontFamily: 'var(--fm)',
+        fontSize: '12px',
+        letterSpacing: '0.08em',
+        color: 'var(--dk)',
+        marginBottom: '16px',
+      }}>
+        <span style={{ color: 'var(--bl)' }}>[&gt;]</span>
         {t(lang, 'comments')}
         {comments.length > 0 && (
-          <span className="text-xs font-medium text-white bg-indigo-400 rounded-full px-2 py-0.5">
+          <span style={{
+            fontFamily: 'var(--fm)',
+            fontSize: '10px',
+            padding: '2px 8px',
+            border: '2px solid var(--bl)',
+            background: 'var(--bm)',
+            color: 'var(--wh)',
+            boxShadow: '2px 2px 0 var(--bl)',
+          }}>
             {comments.length}
           </span>
         )}
       </h3>
 
       {/* Comment list */}
-      <div className="space-y-3 mb-8">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
         {comments.length === 0 ? (
-          <p className="text-sm text-gray-400">{t(lang, 'commentEmpty')}</p>
+          <p style={{ fontFamily: 'var(--fm)', fontSize: '12px', color: 'var(--dk)', opacity: 0.5 }}>
+            {t(lang, 'commentEmpty')}
+          </p>
         ) : (
-          <AnimatePresence>
-            {comments.map((c) => (
-              <motion.div
-                key={c.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-50 rounded-xl p-4"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-semibold text-gray-800">{c.nickname}</span>
-                  <span className="text-xs text-gray-400">{formatDate(c.createdAt)}</span>
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{c.content}</p>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          comments.map((c) => (
+            <div
+              key={c.id}
+              style={{
+                border: '2px solid var(--pn)',
+                background: 'var(--of)',
+                padding: '12px 14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontFamily: 'var(--fh)', fontSize: '14px', fontWeight: 700, color: 'var(--dk)' }}>
+                  {c.nickname}
+                </span>
+                <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', letterSpacing: '0.04em' }}>
+                  {formatDate(c.createdAt)}
+                </span>
+              </div>
+              <p style={{ fontFamily: 'var(--fb)', fontSize: '13px', color: 'var(--dk)', opacity: 0.85, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                {c.content}
+              </p>
+            </div>
+          ))
         )}
       </div>
 
       {/* Input form */}
-      <form onSubmit={handleSubmit} className="space-y-2.5">
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <input
           type="text"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           placeholder={t(lang, 'nicknamePlaceholder')}
           maxLength={20}
-          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition-all"
+          style={inputStyle}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--bm)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = 'var(--dk)';
+          }}
         />
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: '8px' }}>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={t(lang, 'commentPlaceholder')}
             rows={3}
             maxLength={500}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition-all resize-none"
+            style={{ ...inputStyle, resize: 'none', flex: 1 }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--bm)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--dk)';
+            }}
           />
           <button
             type="submit"
             disabled={submitting || !nickname.trim() || !content.trim()}
-            className="self-end px-4 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 active:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+            style={{
+              alignSelf: 'flex-end',
+              fontFamily: 'var(--fm)',
+              fontSize: '11px',
+              letterSpacing: '0.06em',
+              padding: '10px 16px',
+              border: '2px solid var(--bl)',
+              background: 'var(--bm)',
+              color: 'var(--wh)',
+              boxShadow: '3px 3px 0 var(--bl)',
+              cursor: submitting || !nickname.trim() || !content.trim() ? 'not-allowed' : 'pointer',
+              opacity: submitting || !nickname.trim() || !content.trim() ? 0.4 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+            }}
           >
-            <Send className="w-3.5 h-3.5" />
-            {t(lang, 'commentSubmit')}
+            [&gt;] {t(lang, 'commentSubmit')}
           </button>
         </div>
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && (
+          <p style={{
+            fontFamily: 'var(--fm)',
+            fontSize: '11px',
+            padding: '8px 12px',
+            border: '2px solid var(--or)',
+            background: 'var(--obg)',
+            color: 'var(--or)',
+          }}>
+            [!] {error}
+          </p>
+        )}
       </form>
     </div>
   );

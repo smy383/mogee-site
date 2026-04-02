@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 const Login: React.FC = () => {
   const { login, user } = useAuth();
@@ -31,86 +29,159 @@ const Login: React.FC = () => {
     }
   };
 
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex items-center justify-center px-6">
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30" />
-      </div>
+  const inputStyle: React.CSSProperties = {
+    fontFamily: 'var(--fb)',
+    fontSize: '13px',
+    padding: '10px 14px',
+    border: '2px solid var(--dk)',
+    background: 'var(--wh)',
+    color: 'var(--dk)',
+    boxShadow: 'inset 2px 2px 0 var(--pn)',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+  };
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-sm"
-      >
-        <div className="bg-white/80 backdrop-blur-xl border border-gray-100 rounded-3xl p-8 shadow-xl shadow-gray-200/40">
-          {/* Icon */}
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-5 h-5 text-white" />
+  return (
+    <main style={{ minHeight: '100vh', background: 'var(--wh)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ width: '100%', maxWidth: '380px' }}>
+        {/* Window frame */}
+        <div style={{ border: '3px solid var(--dk)', boxShadow: '6px 6px 0 var(--dk)', background: 'var(--wh)' }}>
+          {/* Title bar */}
+          <div style={{ background: 'var(--bm)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '3px solid var(--dk)' }}>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--wh)', letterSpacing: '0.12em' }}>
+              ADMIN LOGIN
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {['_', '[ ]', 'X'].map((sym) => (
+                <span key={sym} style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--wh)', padding: '1px 6px', border: '1px solid rgba(255,255,255,0.4)', cursor: 'default' }}>
+                  {sym}
+                </span>
+              ))}
+            </div>
           </div>
 
-          <h1 className="text-xl font-bold text-gray-900 text-center mb-1">관리자 로그인</h1>
-          <p className="text-sm text-gray-400 text-center mb-8">블로그 관리자만 접근할 수 있어요</p>
+          {/* Body */}
+          <div style={{ padding: '28px 24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{
+                fontFamily: 'var(--fm)',
+                fontSize: '28px',
+                color: 'var(--bm)',
+                marginBottom: '8px',
+                letterSpacing: '0.04em',
+              }}>
+                [*]
+              </div>
+              <h1 style={{ fontFamily: 'var(--fh)', fontSize: '22px', fontWeight: 700, color: 'var(--dk)', marginBottom: '4px' }}>
+                관리자 로그인
+              </h1>
+              <p style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--dk)', opacity: 0.5, letterSpacing: '0.04em' }}>
+                블로그 관리자만 접근할 수 있어요
+              </p>
+            </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">이메일</label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontFamily: 'var(--fm)', fontSize: '10px', letterSpacing: '0.1em', color: 'var(--bl)', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  EMAIL
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@example.com"
                   required
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white/70 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-all text-sm"
+                  style={inputStyle}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--bm)'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--dk)'; }}
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">비밀번호</label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 bg-white/70 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-all text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              <div>
+                <label style={{ fontFamily: 'var(--fm)', fontSize: '10px', letterSpacing: '0.1em', color: 'var(--bl)', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>
+                  PASSWORD
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    style={{ ...inputStyle, paddingRight: '42px' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--bm)'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--dk)'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      fontFamily: 'var(--fm)',
+                      fontSize: '10px',
+                      color: 'var(--bl)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '4px',
+                    }}
+                  >
+                    {showPw ? '[X]' : '[O]'}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {error && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-sm text-red-500 bg-red-50 px-4 py-2.5 rounded-xl"
+              {error && (
+                <div style={{
+                  fontFamily: 'var(--fm)',
+                  fontSize: '11px',
+                  padding: '10px 14px',
+                  border: '2px solid var(--or)',
+                  background: 'var(--obg)',
+                  color: 'var(--or)',
+                }}>
+                  [!] {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  fontFamily: 'var(--fm)',
+                  fontSize: '12px',
+                  letterSpacing: '0.08em',
+                  padding: '12px',
+                  border: '2px solid var(--bl)',
+                  background: 'var(--bm)',
+                  color: 'var(--wh)',
+                  boxShadow: '4px 4px 0 var(--bl)',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.6 : 1,
+                  width: '100%',
+                  textTransform: 'uppercase',
+                }}
               >
-                {error}
-              </motion.p>
-            )}
+                {loading ? 'LOGGING IN...' : 'LOGIN >>'}
+              </button>
+            </form>
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm"
-            >
-              {loading ? '로그인 중...' : '로그인'}
-            </button>
-          </form>
+          {/* Status bar */}
+          <div style={{ background: 'var(--pn)', borderTop: '3px solid var(--dk)', padding: '4px 12px', display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--dk)', letterSpacing: '0.08em', opacity: 0.7 }}>
+              SECURE CONNECTION
+            </span>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', letterSpacing: '0.08em' }}>
+              [*] HTTPS
+            </span>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </main>
   );
 };

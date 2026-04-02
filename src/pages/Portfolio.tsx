@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocsFromServer } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { motion } from 'framer-motion';
-import { Download, ExternalLink, Star, Shield, Briefcase } from 'lucide-react';
 import { useLang, t, Lang } from '../contexts/LanguageContext';
 import SEOHead from '../components/SEOHead';
 
@@ -21,131 +19,138 @@ interface AppData {
   order?: number;
 }
 
-const AppCard: React.FC<{ app: AppData; index: number; lang: Lang }> = ({ app, index, lang }) => {
+const btnStyle: React.CSSProperties = {
+  fontFamily: 'var(--fm)',
+  fontSize: '11px',
+  letterSpacing: '0.06em',
+  padding: '6px 14px',
+  border: '2px solid var(--dk)',
+  background: 'var(--wh)',
+  color: 'var(--dk)',
+  cursor: 'pointer',
+  textDecoration: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+};
+
+const AppCard: React.FC<{ app: AppData; lang: Lang }> = ({ app, lang }) => {
   const playStoreUrl = `https://play.google.com/store/apps/details?id=${app.packageName}`;
   const isWeb = !app.packageName.startsWith('com.');
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.4 }}
-      viewport={{ once: true }}
-      className="group bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 hover:shadow-lg hover:shadow-gray-200/60 hover:border-gray-200 transition-all duration-300 hover:-translate-y-0.5"
+    <div
+      style={{
+        border: '2px solid var(--dk)',
+        boxShadow: '5px 5px 0 var(--dk)',
+        background: 'var(--wh)',
+        padding: '20px',
+        transition: 'transform 0.12s, box-shadow 0.12s',
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.transform = 'translate(-3px, -3px)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '8px 8px 0 var(--dk)';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.transform = 'translate(0, 0)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '5px 5px 0 var(--dk)';
+      }}
     >
       {/* Header */}
-      <div className="flex items-start gap-4 mb-4">
+      <div style={{ display: 'flex', alignItems: 'start', gap: '14px', marginBottom: '14px' }}>
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 shadow-sm overflow-hidden"
-          style={{ backgroundColor: app.logo ? 'transparent' : `${app.primaryColor}18` }}
+          style={{
+            width: '56px',
+            height: '56px',
+            border: '2px solid var(--dk)',
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+            overflow: 'hidden',
+            backgroundColor: app.logo ? 'transparent' : `${app.primaryColor}18`,
+          }}
         >
           {app.logo ? (
-            <img src={app.logo} alt={app.title} className="w-full h-full object-cover rounded-2xl" loading="lazy" />
+            <img src={app.logo} alt={app.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
           ) : (
             app.icon
           )}
         </div>
         <div>
-          <h3 className="text-base font-bold text-gray-900">{app.title}</h3>
-          <p className="text-xs text-gray-400 mt-0.5">{app.packageName}</p>
+          <h3 style={{ fontFamily: 'var(--fh)', fontSize: '16px', fontWeight: 700, color: 'var(--dk)' }}>
+            {app.title}
+          </h3>
+          <p style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', marginTop: '2px', letterSpacing: '0.04em' }}>
+            {app.packageName}
+          </p>
         </div>
       </div>
 
       {/* Description */}
-      <p className="text-sm text-gray-500 leading-relaxed mb-4 line-clamp-2">
+      <p style={{ fontFamily: 'var(--fb)', fontSize: '13px', color: 'var(--dk)', opacity: 0.7, lineHeight: 1.5, marginBottom: '14px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {app.description[lang]}
       </p>
 
       {/* Features */}
-      <ul className="space-y-1.5 mb-5">
+      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 16px 0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {app.features[lang].map((f, i) => (
-          <li key={i} className="flex items-start gap-2 text-xs text-gray-500">
-            <Star className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: app.primaryColor }} fill="currentColor" />
+          <li key={i} style={{ fontFamily: 'var(--fb)', fontSize: '12px', color: 'var(--dk)', opacity: 0.8, display: 'flex', alignItems: 'start', gap: '6px' }}>
+            <span style={{ fontFamily: 'var(--fm)', color: app.primaryColor, fontWeight: 700, flexShrink: 0 }}>[*]</span>
             <span>{f}</span>
           </li>
         ))}
       </ul>
 
       {/* Actions */}
-      <div className="flex gap-2 flex-wrap">
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
         {isWeb && app.websiteUrl ? (
-          <a
-            href={app.websiteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 hover:shadow-md"
-            style={{ backgroundColor: app.primaryColor }}
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            {t(lang, 'website')}
+          <a href={app.websiteUrl} target="_blank" rel="noopener noreferrer"
+            style={{ ...btnStyle, background: app.primaryColor, color: 'var(--wh)', borderColor: 'var(--dk)', boxShadow: '3px 3px 0 var(--dk)', flex: 1, justifyContent: 'center' }}>
+            [&gt;] {t(lang, 'website')}
           </a>
         ) : (
-          <a
-            href={playStoreUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 hover:shadow-md"
-            style={{ backgroundColor: app.primaryColor }}
-          >
-            <Download className="w-3.5 h-3.5" />
-            Google Play
+          <a href={playStoreUrl} target="_blank" rel="noopener noreferrer"
+            style={{ ...btnStyle, background: app.primaryColor, color: 'var(--wh)', borderColor: 'var(--dk)', boxShadow: '3px 3px 0 var(--dk)', flex: 1, justifyContent: 'center' }}>
+            [v] Google Play
           </a>
         )}
         {app.appStoreUrl && (
-          <a
-            href={app.appStoreUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 transition-all"
-          >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-            </svg>
+          <a href={app.appStoreUrl} target="_blank" rel="noopener noreferrer"
+            style={{ ...btnStyle, background: 'var(--dk)', color: 'var(--wh)', boxShadow: '3px 3px 0 var(--bl)' }}>
             App Store
           </a>
         )}
         {app.privacyPolicyUrl && (
-          <a
-            href={app.privacyPolicyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
-            title={t(lang, 'privacyPolicy')}
-          >
-            <Shield className="w-4 h-4" />
+          <a href={app.privacyPolicyUrl} target="_blank" rel="noopener noreferrer"
+            style={{ ...btnStyle, padding: '6px 10px' }} title={t(lang, 'privacyPolicy')}>
+            [i]
           </a>
         )}
         {app.websiteUrl && !isWeb && (
-          <a
-            href={app.websiteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
-            title={t(lang, 'website')}
-          >
-            <ExternalLink className="w-4 h-4" />
+          <a href={app.websiteUrl} target="_blank" rel="noopener noreferrer"
+            style={{ ...btnStyle, padding: '6px 10px' }} title={t(lang, 'website')}>
+            [&gt;]
           </a>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 
 const SkeletonCard: React.FC = () => (
-  <div className="bg-white/70 border border-gray-100 rounded-2xl p-6 animate-pulse">
-    <div className="flex items-start gap-4 mb-4">
-      <div className="w-14 h-14 rounded-2xl bg-gray-200 flex-shrink-0" />
-      <div className="flex-1">
-        <div className="h-4 bg-gray-200 rounded w-2/3 mb-2" />
-        <div className="h-3 bg-gray-100 rounded w-1/2" />
+  <div style={{ background: 'var(--of)', border: '2px solid var(--pn)', padding: '20px' }}>
+    <div style={{ display: 'flex', alignItems: 'start', gap: '14px', marginBottom: '14px' }}>
+      <div style={{ width: '56px', height: '56px', background: 'var(--pn)', border: '2px solid var(--pn)', flexShrink: 0 }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ height: '14px', background: 'var(--pn)', width: '66%', marginBottom: '6px' }} />
+        <div style={{ height: '10px', background: 'var(--pn)', width: '50%' }} />
       </div>
     </div>
-    <div className="h-3 bg-gray-100 rounded w-full mb-2" />
-    <div className="h-3 bg-gray-100 rounded w-4/5 mb-4" />
-    <div className="space-y-2 mb-5">
-      {[1, 2, 3].map(i => <div key={i} className="h-3 bg-gray-100 rounded w-3/4" />)}
-    </div>
-    <div className="h-9 bg-gray-200 rounded-xl" />
+    <div style={{ height: '10px', background: 'var(--pn)', width: '100%', marginBottom: '6px' }} />
+    <div style={{ height: '10px', background: 'var(--pn)', width: '80%', marginBottom: '14px' }} />
+    <div style={{ height: '30px', background: 'var(--pn)', width: '100%' }} />
   </div>
 );
 
@@ -158,8 +163,7 @@ const Portfolio: React.FC = () => {
     const fetchApps = async () => {
       try {
         const snap = await getDocsFromServer(collection(db, 'portfolio'));
-        const data = snap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() })) as AppData[];
+        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AppData[];
         data.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
         setApps(data);
       } catch (e) {
@@ -177,72 +181,87 @@ const Portfolio: React.FC = () => {
     name: 'Portfolio | Mogee Development',
     description: 'Flutter 앱 및 웹 서비스 포트폴리오.',
     url: 'https://mogee.org/portfolio',
-    author: {
-      '@type': 'Person',
-      name: 'Mogee Development',
-      url: 'https://mogee.org',
-    },
+    author: { '@type': 'Person', name: 'Mogee Development', url: 'https://mogee.org' },
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+    <main style={{ minHeight: '100vh', background: 'var(--wh)' }}>
       <SEOHead
         title="Portfolio"
         description="Flutter 앱 및 웹 서비스 포트폴리오. Mogee Development가 만든 프로젝트들을 확인하세요."
         canonicalPath="/portfolio"
         jsonLd={portfolioJsonLd}
       />
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-violet-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob animation-delay-2000" />
-      </div>
 
-      <div className="max-w-5xl mx-auto px-6 pt-28 pb-20">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-12"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-indigo-500 flex items-center justify-center">
-              <Briefcase className="w-4 h-4 text-white" />
+      <div style={{ maxWidth: '1024px', margin: '0 auto', padding: '112px 24px 80px' }}>
+        {/* Window Frame Header */}
+        <div style={{ border: '2px solid var(--dk)', boxShadow: '6px 6px 0 var(--dk)', marginBottom: '32px', background: 'var(--wh)' }}>
+          {/* Title bar */}
+          <div style={{ background: 'var(--bm)', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--dk)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontFamily: 'var(--fm)', fontSize: '11px', color: 'var(--wh)', letterSpacing: '0.12em' }}>
+                [#] PORTFOLIO.EXE
+              </span>
             </div>
-            <span className="text-sm font-medium text-indigo-500">{t(lang, 'portfolio')}</span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {['_', '[ ]', 'X'].map((sym) => (
+                <span key={sym} style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--wh)', padding: '1px 6px', border: '1px solid rgba(255,255,255,0.4)', cursor: 'default' }}>
+                  {sym}
+                </span>
+              ))}
+            </div>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            {t(lang, 'portfolioTitle')}
-          </h1>
-          <p className="text-gray-500">
-            {loading ? '...' : t(lang, 'portfolioSubtitle', apps.length)}
-          </p>
-        </motion.div>
+
+          {/* Body */}
+          <div style={{ padding: '24px 28px' }}>
+            <div style={{ fontFamily: 'var(--fm)', fontSize: '10px', letterSpacing: '0.18em', color: 'var(--bl)', textTransform: 'uppercase', marginBottom: '8px' }}>
+              {'// APPS & SERVICES'}
+            </div>
+            <h1 style={{ fontFamily: 'var(--fh)', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700, color: 'var(--dk)', lineHeight: 1.1, marginBottom: '8px' }}>
+              {t(lang, 'portfolioTitle')}
+            </h1>
+            <p style={{ fontFamily: 'var(--fb)', fontSize: '14px', color: 'var(--dk)', opacity: 0.65 }}>
+              {loading ? '...' : t(lang, 'portfolioSubtitle', apps.length)}
+            </p>
+          </div>
+
+          {/* Status bar */}
+          <div style={{ background: 'var(--of)', borderTop: '2px solid var(--dk)', padding: '4px 12px', display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', letterSpacing: '0.08em' }}>READY</span>
+            <span style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--dk)', letterSpacing: '0.08em', opacity: 0.6 }}>
+              {loading ? 'LOADING...' : `${apps.length} APPS`}
+            </span>
+          </div>
+        </div>
 
         {/* Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-            : apps.map((app, i) => (
-                <AppCard key={app.id} app={app} index={i} lang={lang} />
-              ))
+            : apps.map((app) => <AppCard key={app.id} app={app} lang={lang} />)
           }
         </div>
 
         {/* Status badge */}
         {!loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            viewport={{ once: true }}
-            className="mt-12 flex justify-center"
-          >
-            <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm text-sm text-gray-500">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
+            <div style={{
+              fontFamily: 'var(--fm)',
+              fontSize: '11px',
+              letterSpacing: '0.08em',
+              padding: '6px 16px',
+              border: '2px solid var(--bm)',
+              background: 'var(--bbg)',
+              color: 'var(--bl)',
+              boxShadow: '2px 2px 0 var(--bl)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              <span style={{ width: '8px', height: '8px', background: 'var(--bm)', display: 'inline-block' }} />
               {t(lang, 'activelyDev')}
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </main>
