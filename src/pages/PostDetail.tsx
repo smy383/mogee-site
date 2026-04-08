@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { doc, getDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDocFromServer, deleteDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang, t, Lang } from '../contexts/LanguageContext';
 import { Post } from '../components/BlogCard';
 import SEOHead from '../components/SEOHead';
 import CommentSection from '../components/CommentSection';
+import CoupangBanner from '../components/CoupangBanner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -47,7 +48,7 @@ const PostDetail: React.FC = () => {
     if (!id) return;
     const fetchPost = async () => {
       try {
-        const snap = await getDoc(doc(db, 'posts', id));
+        const snap = await getDocFromServer(doc(db, 'posts', id));
         if (snap.exists()) {
           const data = { id: snap.id, ...snap.data() } as Post;
           setPost(data);
@@ -57,14 +58,13 @@ const PostDetail: React.FC = () => {
       } finally {
         setLoading(false);
       }
+      // 조회수 increment는 fetch 완료 후 실행 (pending write 병합 방지)
+      if (!viewedRef.current) {
+        viewedRef.current = true;
+        updateDoc(doc(db, 'posts', id), { views: increment(1) }).catch(() => {});
+      }
     };
     fetchPost();
-  }, [id]);
-
-  useEffect(() => {
-    if (!id || viewedRef.current) return;
-    viewedRef.current = true;
-    updateDoc(doc(db, 'posts', id), { views: increment(1) }).catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -345,6 +345,58 @@ const PostDetail: React.FC = () => {
           </div>
         )}
 
+        {/* Coupang Product Banner (from Firestore) */}
+        {post.productBanner?.link && (
+          <div style={{
+            marginBottom: '24px',
+            padding: '16px',
+            border: '2px solid var(--dk)',
+            boxShadow: '4px 4px 0 var(--dk)',
+            background: 'var(--of)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+          }}>
+            {post.productBanner.image && (
+              <a
+                href={post.productBanner.link}
+                target="_blank"
+                referrerPolicy="unsafe-url"
+                style={{ flexShrink: 0 }}
+              >
+                <img
+                  src={post.productBanner.image}
+                  alt={post.productBanner.title || '추천 상품'}
+                  referrerPolicy="unsafe-url"
+                  style={{ width: 120, height: 240, border: '2px solid var(--pn)' }}
+                />
+              </a>
+            )}
+            <div>
+              <p style={{ fontFamily: 'var(--fm)', fontSize: '10px', color: 'var(--bl)', letterSpacing: '0.12em', marginBottom: '6px' }}>
+                {'// RECOMMENDED GEAR'}
+              </p>
+              <a
+                href={post.productBanner.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                referrerPolicy="unsafe-url"
+                style={{ fontFamily: 'var(--fh)', fontSize: '15px', fontWeight: 700, color: 'var(--dk)', textDecoration: 'none' }}
+              >
+                {post.productBanner.title || '추천 상품 보기'}
+              </a>
+              {post.productBanner.description && (
+                <p style={{ fontFamily: 'var(--fb)', fontSize: '13px', color: 'var(--dk)', opacity: 0.7, marginTop: '4px', lineHeight: 1.5 }}>
+                  {post.productBanner.description}
+                </p>
+              )}
+              <p style={{ fontFamily: 'var(--fm)', fontSize: '9px', color: 'var(--dk)', opacity: 0.4, marginTop: '8px' }}>
+                이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         <div
           key={lang}
@@ -430,6 +482,9 @@ const PostDetail: React.FC = () => {
             </a>
           </div>
         </div>
+
+        {/* Coupang Partners Banner */}
+        <CoupangBanner />
 
         {/* Comments */}
         <CommentSection postId={post.id} />
